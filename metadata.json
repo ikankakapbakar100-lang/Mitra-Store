@@ -1,0 +1,10 @@
+{
+  "name": "MitraStore",
+  "description": "MitraStore - Aplikasi Kasir POS & Kelola Toko Cetakan Kue, Alat Masak & Perabotan Dapur Minimalis Pink & Putih dengan Multi-Kasir Login, Kamera Barcode, Shopee Sync, dan Rekap Penjualan.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
