@@ -12,8 +12,9 @@ import {
   Search, 
   Plus, 
   Flame, 
-  AlertTriangle, 
-  XCircle, 
+  Layers,
+  PackageX,
+  Info,
   Trash2, 
   X, 
   Camera, 
@@ -252,8 +253,8 @@ export const InventoryView: React.FC = () => {
           onClick={() => setHighlightFilter('all')}
           className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl border text-left transition-all cursor-pointer ${
             highlightFilter === 'all'
-              ? 'bg-[#F43F5E] text-white border-[#F43F5E] shadow-xs'
-              : 'bg-white hover:bg-pink-50/50 border-pink-100 text-slate-800'
+              ? 'bg-[#800020] text-white border-[#800020] shadow-xs'
+              : 'bg-white hover:bg-[#FFF5F7] border-[#FCE4E8] text-black'
           }`}
         >
           <div className="flex items-center justify-between">
@@ -272,17 +273,17 @@ export const InventoryView: React.FC = () => {
           onClick={() => setHighlightFilter(highlightFilter === 'top_seller' ? 'all' : 'top_seller')}
           className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl border text-left transition-all cursor-pointer ${
             highlightFilter === 'top_seller'
-              ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
-              : 'bg-white hover:bg-amber-50/50 border-amber-200 text-slate-800'
+              ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+              : 'bg-white hover:bg-amber-50 border-amber-200 text-black'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider truncate text-amber-600">
+            <span className="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider truncate text-amber-700">
               🔥 Laris
             </span>
-            <Flame className="w-3 h-3 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
+            <Flame className="w-3 h-3 sm:w-4 sm:h-4 text-amber-600 shrink-0" />
           </div>
-          <div className="text-sm sm:text-xl font-black font-mono text-amber-600 mt-0.5">
+          <div className="text-sm sm:text-xl font-black font-mono text-amber-700 mt-0.5">
             {topSellerCount} <span className="text-[9px] sm:text-xs font-normal opacity-80 hidden sm:inline">item</span>
           </div>
         </button>
@@ -292,17 +293,17 @@ export const InventoryView: React.FC = () => {
           onClick={() => setHighlightFilter(highlightFilter === 'low_stock' ? 'all' : 'low_stock')}
           className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl border text-left transition-all cursor-pointer ${
             highlightFilter === 'low_stock'
-              ? 'bg-rose-500 text-white border-rose-500 shadow-xs'
-              : 'bg-white hover:bg-rose-50/50 border-rose-200 text-slate-800'
+              ? 'bg-[#800020] text-white border-[#800020] shadow-xs'
+              : 'bg-white hover:bg-[#FFF5F7] border-[#F8CCD4] text-black'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider truncate text-rose-600">
-              ⚠️ Tipis
+            <span className="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider truncate text-[#800020]">
+              Menipis
             </span>
-            <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 text-rose-500 shrink-0" />
+            <Layers className="w-3 h-3 sm:w-4 sm:h-4 text-[#800020] shrink-0" />
           </div>
-          <div className="text-sm sm:text-xl font-black font-mono text-rose-600 mt-0.5">
+          <div className="text-sm sm:text-xl font-black font-mono text-[#800020] mt-0.5">
             {lowStockCount} <span className="text-[9px] sm:text-xs font-normal opacity-80 hidden sm:inline">item</span>
           </div>
         </button>
@@ -312,40 +313,40 @@ export const InventoryView: React.FC = () => {
           onClick={() => setHighlightFilter(highlightFilter === 'out_of_stock' ? 'all' : 'out_of_stock')}
           className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl border text-left transition-all cursor-pointer ${
             highlightFilter === 'out_of_stock'
-              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-              : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-800'
+              ? 'bg-black text-white border-black shadow-xs'
+              : 'bg-white hover:bg-[#FFF5F7] border-stone-200 text-black'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider truncate text-slate-600">
-              🔴 Habis
+            <span className="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider truncate text-stone-700">
+              Habis
             </span>
-            <XCircle className="w-3 h-3 sm:w-4 sm:h-4 text-slate-500 shrink-0" />
+            <PackageX className="w-3 h-3 sm:w-4 sm:h-4 text-stone-600 shrink-0" />
           </div>
-          <div className="text-sm sm:text-xl font-black font-mono text-slate-900 mt-0.5">
+          <div className="text-sm sm:text-xl font-black font-mono text-black mt-0.5">
             {outOfStockCount} <span className="text-[9px] sm:text-xs font-normal opacity-80 hidden sm:inline">item</span>
           </div>
         </button>
       </div>
 
       {/* 2. SEARCH & KATEGORI BAR (TAMBAH & HAPUS KATEGORI) */}
-      <div className="bg-white p-3.5 rounded-3xl border border-pink-100 shadow-2xs space-y-3">
+      <div className="bg-white p-3.5 rounded-3xl border border-[#FCE4E8] shadow-2xs space-y-3">
         <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
           
           {/* Search box */}
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-500" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari cetakan kue, loyang, perabot..."
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-pink-100 bg-pink-50/20 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#F43F5E]"
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-[#800020]"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-black cursor-pointer"
               >
                 ×
               </button>
@@ -358,8 +359,8 @@ export const InventoryView: React.FC = () => {
               onClick={() => setViewDensity(viewDensity === 'compact' ? 'grid' : 'compact')}
               className={`p-1.5 sm:px-2.5 sm:py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1 cursor-pointer shrink-0 ${
                 viewDensity === 'compact'
-                  ? 'bg-rose-50 text-[#F43F5E] border-rose-200'
-                  : 'bg-white text-slate-600 border-pink-200 hover:bg-pink-50'
+                  ? 'bg-[#FCE8EB] text-[#800020] border-[#F8CCD4]'
+                  : 'bg-white text-black border-[#FCE4E8] hover:bg-[#FFF5F7]'
               }`}
               title={viewDensity === 'compact' ? 'Mode Kompak HP (Muat 10+ Stok Sekaligus Tanpa Scroll)' : 'Mode Grid Mini'}
             >
@@ -379,7 +380,7 @@ export const InventoryView: React.FC = () => {
             <button
               onClick={handleManualShopeeSync}
               disabled={isSyncingShopee}
-              className="p-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold border border-pink-200 bg-pink-50/60 text-[#F43F5E] hover:bg-pink-100 flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="p-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold border border-[#F8CCD4] bg-[#FCE8EB] text-[#800020] hover:bg-[#F8CCD4] flex items-center gap-1.5 transition-colors cursor-pointer"
               title="Sinkronkan dengan Shopee"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isSyncingShopee ? 'animate-spin' : ''}`} />
@@ -388,7 +389,7 @@ export const InventoryView: React.FC = () => {
 
             <button
               onClick={() => setIsCategoryManageOpen(true)}
-              className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold border border-pink-200 bg-white text-slate-700 hover:bg-pink-50/60 flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold border border-[#FCE4E8] bg-white text-black hover:bg-[#FFF5F7] flex items-center gap-1.5 transition-colors cursor-pointer"
               title="Kelola & Hapus Kategori"
             >
               <span>Kategori</span>
@@ -396,7 +397,7 @@ export const InventoryView: React.FC = () => {
 
             <button
               onClick={handleOpenAddProduct}
-              className="px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold text-white bg-[#F43F5E] hover:bg-[#E11D48] transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer shrink-0"
+              className="px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer shrink-0"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Tambah</span>
@@ -416,8 +417,8 @@ export const InventoryView: React.FC = () => {
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 ${
                     isSelected
-                      ? 'bg-[#F43F5E] text-white shadow-2xs'
-                      : 'bg-pink-50/50 text-slate-700 hover:bg-pink-100/60 border border-pink-100'
+                      ? 'bg-[#800020] text-white shadow-2xs'
+                      : 'bg-[#FFF5F7] text-black hover:bg-[#FCE8EB] border border-[#FCE4E8]'
                   }`}
                 >
                   <span>{cat}</span>
@@ -432,7 +433,7 @@ export const InventoryView: React.FC = () => {
                       setIsCategoryManageOpen(true);
                     }}
                     title={`Hapus kategori ${cat}`}
-                    className="ml-0.5 p-1 text-slate-400 hover:text-rose-600 hover:bg-pink-100 rounded-lg transition-colors cursor-pointer"
+                    className="ml-0.5 p-1 text-stone-400 hover:text-[#800020] hover:bg-[#FCE8EB] rounded-lg transition-colors cursor-pointer"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -444,7 +445,7 @@ export const InventoryView: React.FC = () => {
           {/* Quick Add Category Button */}
           <button
             onClick={() => setIsCategoryManageOpen(true)}
-            className="px-2.5 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap bg-white text-[#F43F5E] border border-dashed border-pink-300 hover:bg-pink-50 transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+            className="px-2.5 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap bg-white text-[#800020] border border-dashed border-[#F8CCD4] hover:bg-[#FFF5F7] transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
           >
             <Plus className="w-3 h-3" />
             <span>Kategori</span>
@@ -455,20 +456,20 @@ export const InventoryView: React.FC = () => {
       {/* 3. DESAIN STOK BARANG MINIMALIS & HEMAT SPACE (FOTO + NAMA STOK) */}
       {/* Saat produk ditekan, langsung buka edit modal untuk ubah stok, harga, & saldo */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between px-2 text-xs text-slate-500">
+        <div className="flex items-center justify-between px-2 text-xs text-stone-700">
           <span>Menampilkan {filteredProducts.length} produk cetakan &amp; perabot</span>
-          <span className="text-[11px] text-[#F43F5E] font-medium">
+          <span className="text-[11px] text-[#800020] font-bold">
             💡 Tekan produk untuk mengedit stok &amp; harga
           </span>
         </div>
 
         {filteredProducts.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-pink-100 p-12 text-center">
-            <Package className="w-8 h-8 text-slate-300 mx-auto mb-2 opacity-50" />
-            <h4 className="text-sm font-bold text-slate-800">
+          <div className="bg-white rounded-3xl border border-[#FCE4E8] p-12 text-center">
+            <Package className="w-8 h-8 text-stone-400 mx-auto mb-2 opacity-50" />
+            <h4 className="text-sm font-black text-black">
               Tidak Ada Stok Sesuai Filter
             </h4>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-stone-600 font-medium mt-1">
               Coba ganti filter highlight atau pilih kategori lain.
             </p>
           </div>
@@ -485,18 +486,18 @@ export const InventoryView: React.FC = () => {
                   <div
                     key={p.id}
                     onClick={() => handleOpenEditProduct(p)}
-                    className={`group relative bg-white rounded-xl border p-1.5 sm:p-2 text-left transition-all cursor-pointer flex items-center gap-1.5 sm:gap-2 hover:border-[#F43F5E] hover:shadow-xs h-[50px] sm:h-[56px] ${
+                    className={`group relative bg-white rounded-xl border p-1.5 sm:p-2 text-left transition-all cursor-pointer flex items-center gap-1.5 sm:gap-2 hover:border-[#800020] hover:shadow-xs h-[50px] sm:h-[56px] ${
                       isOutOfStock
-                        ? 'border-slate-200 bg-slate-50/40 opacity-70'
+                        ? 'border-stone-300 bg-stone-50/70 opacity-70'
                         : isLowStock
-                        ? 'border-rose-200 bg-rose-50/20'
-                        : 'border-pink-100'
+                        ? 'border-[#F8CCD4] bg-[#FFF5F7]'
+                        : 'border-[#FCE4E8]'
                     }`}
                     title="Klik untuk mengubah stok & info barang"
                   >
                     {/* Foto Stok Mini Terkompresi (38x38 di HP, 44x44 di desktop) */}
-                    <div className="relative w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-pink-50/40 overflow-hidden shrink-0 border border-pink-100/60 flex items-center justify-center">
-                      <Package className="w-4 h-4 text-pink-300 absolute pointer-events-none" />
+                    <div className="relative w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-[#FFF5F7] overflow-hidden shrink-0 border border-[#F8CCD4] flex items-center justify-center">
+                      <Package className="w-4 h-4 text-[#800020]/40 absolute pointer-events-none" />
                       <img
                         src={getOptimizedThumb(p.imageUrl)}
                         alt={p.name}
@@ -515,25 +516,25 @@ export const InventoryView: React.FC = () => {
                     {/* Info Stok Ringkas & Hemat Tampilan */}
                     <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-0.5">
                       <div className="flex items-center justify-between gap-1">
-                        <h3 className="text-[11px] sm:text-xs font-bold text-slate-900 truncate leading-tight group-hover:text-[#F43F5E] transition-colors">
+                        <h3 className="text-[11px] sm:text-xs font-bold text-black truncate leading-tight group-hover:text-[#800020] transition-colors">
                           {p.name}
                         </h3>
                         <span className={`text-[9px] font-mono px-1 rounded font-bold shrink-0 ${
                           isOutOfStock 
-                            ? 'bg-slate-900 text-white' 
+                            ? 'bg-black text-white' 
                             : isLowStock 
-                            ? 'bg-rose-100 text-rose-700' 
-                            : 'text-slate-500'
+                            ? 'bg-[#FCE8EB] text-[#800020]' 
+                            : 'text-stone-700'
                         }`}>
                           {p.stock}
                         </span>
                       </div>
 
                       <div className="flex items-center justify-between gap-1">
-                        <span className="text-[10.5px] sm:text-xs font-black font-mono text-[#F43F5E] leading-none">
+                        <span className="text-[10.5px] sm:text-xs font-black font-mono text-[#800020] leading-none">
                           {formatRupiah(p.sellPrice)}
                         </span>
-                        <span className="text-[9px] text-slate-400 group-hover:text-slate-700 flex items-center gap-0.5">
+                        <span className="text-[9px] text-stone-500 group-hover:text-black flex items-center gap-0.5">
                           <Edit3 className="w-2.5 h-2.5" />
                           <span className="hidden sm:inline">Edit</span>
                         </span>
@@ -555,18 +556,18 @@ export const InventoryView: React.FC = () => {
                   <div
                     key={p.id}
                     onClick={() => handleOpenEditProduct(p)}
-                    className={`group relative bg-white rounded-xl border p-1.5 text-left transition-all cursor-pointer flex flex-col justify-between hover:border-[#F43F5E] hover:shadow-xs ${
+                    className={`group relative bg-white rounded-xl border p-1.5 text-left transition-all cursor-pointer flex flex-col justify-between hover:border-[#800020] hover:shadow-xs ${
                       isOutOfStock
-                        ? 'border-slate-200 bg-slate-50/40 opacity-70'
+                        ? 'border-stone-300 bg-stone-50/70 opacity-70'
                         : isLowStock
-                        ? 'border-rose-200'
-                        : 'border-pink-100'
+                        ? 'border-[#F8CCD4] bg-[#FFF5F7]'
+                        : 'border-[#FCE4E8]'
                     }`}
                     title="Klik untuk mengubah stok & info barang"
                   >
                     {/* Visual Foto Stok Mini Terkompresi (h-14 sm:h-16) */}
-                    <div className="relative w-full h-14 sm:h-16 rounded-lg bg-pink-50/30 overflow-hidden mb-1.5 flex items-center justify-center">
-                      <Package className="w-5 h-5 text-pink-300 absolute pointer-events-none" />
+                    <div className="relative w-full h-14 sm:h-16 rounded-lg bg-[#FFF5F7] overflow-hidden mb-1.5 flex items-center justify-center border border-[#F8CCD4]">
+                      <Package className="w-5 h-5 text-[#800020]/40 absolute pointer-events-none" />
                       <img
                         src={getOptimizedThumb(p.imageUrl)}
                         alt={p.name}
@@ -586,34 +587,34 @@ export const InventoryView: React.FC = () => {
                           </span>
                         )}
                         {isOutOfStock && (
-                          <span className="px-1 py-0.2 rounded text-[7px] font-bold bg-slate-900 text-white">
+                          <span className="px-1 py-0.2 rounded text-[7px] font-bold bg-black text-white">
                             Habis
                           </span>
                         )}
                         {isLowStock && (
-                          <span className="px-1 py-0.2 rounded text-[7px] font-bold bg-rose-500 text-white">
+                          <span className="px-1 py-0.2 rounded text-[7px] font-bold bg-[#800020] text-white">
                             Tipis
                           </span>
                         )}
                       </div>
 
                       {/* Stock pill */}
-                      <div className="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-black/70 text-[8px] font-mono text-white">
+                      <div className="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-black/80 text-[8px] font-mono text-white">
                         {p.stock} {p.unit}
                       </div>
                     </div>
 
                     {/* Nama Stok & Harga */}
                     <div className="space-y-0.5">
-                      <h3 className="text-[11px] font-bold text-slate-900 line-clamp-1 leading-tight group-hover:text-[#F43F5E] transition-colors">
+                      <h3 className="text-[11px] font-bold text-black line-clamp-1 leading-tight group-hover:text-[#800020] transition-colors">
                         {p.name}
                       </h3>
 
-                      <div className="flex items-center justify-between text-[10.5px] pt-1 border-t border-pink-50">
-                        <span className="font-mono font-bold text-[#F43F5E]">
+                      <div className="flex items-center justify-between text-[10.5px] pt-1 border-t border-[#FCE4E8]">
+                        <span className="font-mono font-bold text-[#800020]">
                           {formatRupiah(p.sellPrice)}
                         </span>
-                        <span className="text-[9px] text-slate-400 group-hover:text-slate-700 flex items-center gap-0.5 font-medium">
+                        <span className="text-[9px] text-stone-500 group-hover:text-black flex items-center gap-0.5 font-medium">
                           <Edit3 className="w-2.5 h-2.5" />
                           Edit
                         </span>
@@ -629,26 +630,26 @@ export const InventoryView: React.FC = () => {
 
       {/* 4. MODAL EDIT STOK & INFO PRODUK (TINGGAL TEKAN LANGSUNG EDIT!) */}
       {editingProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl shadow-2xl border border-pink-100 max-w-lg w-full p-6 animate-in zoom-in-95 duration-150 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl shadow-2xl border border-[#FCE4E8] max-w-lg w-full p-6 animate-in zoom-in-95 duration-150 space-y-4 max-h-[90vh] overflow-y-auto text-black">
             
-            <div className="flex items-center justify-between pb-3 border-b border-pink-100">
+            <div className="flex items-center justify-between pb-3 border-b border-[#FCE4E8]">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-pink-50 text-[#F43F5E] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-[#FCE8EB] text-[#800020] flex items-center justify-center border border-[#F8CCD4]">
                   <Edit3 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm text-slate-900">
+                  <h3 className="font-black text-sm text-black">
                     Edit Info &amp; Saldo Stok Barang
                   </h3>
-                  <p className="text-[11px] text-slate-400 font-mono">
+                  <p className="text-[11px] text-stone-600 font-mono">
                     SKU: {editingProduct.sku}
                   </p>
                 </div>
               </div>
               <button 
                 onClick={() => setEditingProduct(null)}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-900 cursor-pointer"
+                className="p-1 rounded-full text-stone-500 hover:text-black cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -656,28 +657,29 @@ export const InventoryView: React.FC = () => {
 
             <form onSubmit={handleSaveProduct} className="space-y-3.5">
               {formError && (
-                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold flex items-center gap-1.5">
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                <div className="p-2.5 rounded-xl bg-[#FCE8EB] border border-[#F8CCD4] text-[#800020] text-xs font-bold flex items-center gap-1.5">
+                  <Info className="w-4 h-4 shrink-0" />
                   <span>{formError}</span>
                 </div>
               )}
               
               {/* Product Photo & Camera Capture */}
-              <div className="flex items-center gap-3 p-3 bg-pink-50/30 rounded-2xl border border-pink-100">
+              <div className="flex items-center gap-3 p-3 bg-[#FFF5F7] rounded-2xl border border-[#FCE4E8]">
                 <img 
-                  src={formImageUrl || editingProduct.imageUrl || 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=400&q=80'} 
+                  src={formImageUrl || editingProduct.imageUrl} 
                   alt="Preview" 
-                  className="w-14 h-14 rounded-xl object-cover border border-pink-200 shrink-0" 
+                  referrerPolicy="no-referrer"
+                  className="w-14 h-14 rounded-xl object-cover border border-[#F8CCD4] shrink-0" 
                 />
                 <div className="flex-1 space-y-1">
-                  <label className="block text-[11px] font-semibold text-slate-700">
+                  <label className="block text-[11px] font-bold text-black">
                     Foto Produk / Cetakan
                   </label>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setIsCameraPhotoModalOpen(true)}
-                      className="px-2.5 py-1 text-xs font-bold text-[#F43F5E] bg-white border border-pink-200 rounded-lg hover:bg-pink-50 flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1 text-xs font-bold text-[#800020] bg-white border border-[#F8CCD4] rounded-lg hover:bg-[#FCE8EB] flex items-center gap-1 cursor-pointer"
                     >
                       <Camera className="w-3.5 h-3.5" />
                       Ambil via Kamera
@@ -687,7 +689,7 @@ export const InventoryView: React.FC = () => {
                       value={formImageUrl}
                       onChange={(e) => setFormImageUrl(e.target.value)}
                       placeholder="Atau tempel URL gambar..."
-                      className="flex-1 px-2 py-1 text-xs rounded-lg border border-pink-100 bg-white"
+                      className="flex-1 px-2 py-1 text-xs rounded-lg border border-[#FCE4E8] bg-white text-black"
                     />
                   </div>
                 </div>
@@ -695,14 +697,14 @@ export const InventoryView: React.FC = () => {
 
               {/* Nama Barang */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-black mb-1">
                   Nama Barang / Cetakan:
                 </label>
                 <input
                   type="text"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-pink-200 bg-white text-slate-900 focus:ring-2 focus:ring-[#F43F5E]"
+                  className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                   required
                 />
               </div>
@@ -710,13 +712,13 @@ export const InventoryView: React.FC = () => {
               {/* Kategori & Satuan */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-black mb-1">
                     Kategori:
                   </label>
                   <select
                     value={formCategory}
                     onChange={(e) => setFormCategory(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-pink-200 bg-white text-slate-900 focus:ring-2 focus:ring-[#F43F5E]"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                   >
                     {categories.filter(c => c !== 'Semua').map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
@@ -725,7 +727,7 @@ export const InventoryView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-black mb-1">
                     Satuan:
                   </label>
                   <input
@@ -733,22 +735,22 @@ export const InventoryView: React.FC = () => {
                     value={formUnit}
                     onChange={(e) => setFormUnit(e.target.value)}
                     placeholder="buah, loyang, set, pcs"
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-pink-200 bg-white text-slate-900"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Saldo Stok Fisik & Batas Minimum Stok */}
-              <div className="grid grid-cols-2 gap-3 p-3 bg-pink-50/40 rounded-2xl border border-pink-200">
+              <div className="grid grid-cols-2 gap-3 p-3 bg-[#FFF5F7] rounded-2xl border border-[#FCE4E8]">
                 <div>
-                  <label className="block text-xs font-bold text-slate-900 mb-1">
+                  <label className="block text-xs font-black text-black mb-1">
                     Saldo Stok Fisik:
                   </label>
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => setFormStock(Math.max(0, (parseInt(formStock, 10) || 0) - 1).toString())}
-                      className="w-8 h-8 rounded-lg bg-white border border-pink-200 font-bold text-slate-700 hover:bg-pink-100 flex items-center justify-center cursor-pointer"
+                      className="w-8 h-8 rounded-lg bg-white border border-[#FCE4E8] font-bold text-black hover:bg-[#FCE8EB] flex items-center justify-center cursor-pointer"
                     >
                       -
                     </button>
@@ -756,14 +758,14 @@ export const InventoryView: React.FC = () => {
                       type="number"
                       value={formStock}
                       onChange={(e) => setFormStock(e.target.value)}
-                      className="w-full text-center py-1.5 text-sm font-black font-mono rounded-lg border border-pink-300 bg-white text-[#F43F5E]"
+                      className="w-full text-center py-1.5 text-sm font-black font-mono rounded-lg border border-[#F8CCD4] bg-white text-[#800020]"
                       min="0"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setFormStock(((parseInt(formStock, 10) || 0) + 1).toString())}
-                      className="w-8 h-8 rounded-lg bg-white border border-pink-200 font-bold text-slate-700 hover:bg-pink-100 flex items-center justify-center cursor-pointer"
+                      className="w-8 h-8 rounded-lg bg-white border border-[#FCE4E8] font-bold text-black hover:bg-[#FCE8EB] flex items-center justify-center cursor-pointer"
                     >
                       +
                     </button>
@@ -771,18 +773,18 @@ export const InventoryView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-black mb-1">
                     Batas Peringatan Minimum:
                   </label>
                   <input
                     type="number"
                     value={formMinStock}
                     onChange={(e) => setFormMinStock(e.target.value)}
-                    className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-pink-200 bg-white text-slate-900"
+                    className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                     min="1"
                     required
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">
+                  <p className="text-[10px] text-stone-600 font-medium mt-1">
                     Pemicu alert stok menipis
                   </p>
                 </div>
@@ -791,32 +793,32 @@ export const InventoryView: React.FC = () => {
               {/* Harga Beli (Modal) & Harga Jual */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-black mb-1">
                     Harga Modal (HPP):
                   </label>
                   <div className="relative">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400">Rp</span>
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-stone-500 font-bold">Rp</span>
                     <input
                       type="text"
                       value={formBuyPrice}
                       onChange={(e) => setFormBuyPrice(e.target.value)}
-                      className="w-full pl-8 pr-3 py-2 text-xs font-mono font-bold rounded-xl border border-pink-200 bg-white text-slate-900"
+                      className="w-full pl-8 pr-3 py-2 text-xs font-mono font-bold rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-black mb-1">
                     Harga Jual Toko:
                   </label>
                   <div className="relative">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-[#F43F5E] font-bold">Rp</span>
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-[#800020] font-bold">Rp</span>
                     <input
                       type="text"
                       value={formSellPrice}
                       onChange={(e) => setFormSellPrice(e.target.value)}
-                      className="w-full pl-8 pr-3 py-2 text-xs font-mono font-bold rounded-xl border border-pink-200 bg-white text-[#F43F5E]"
+                      className="w-full pl-8 pr-3 py-2 text-xs font-mono font-bold rounded-xl border border-[#FCE4E8] bg-white text-[#800020] focus:ring-2 focus:ring-[#800020] focus:outline-none"
                       required
                     />
                   </div>
@@ -824,35 +826,35 @@ export const InventoryView: React.FC = () => {
               </div>
 
               {/* Barcode & Shopee Sync */}
-              <div className="flex items-center justify-between p-2.5 rounded-xl border border-pink-100 bg-pink-50/20 text-xs">
+              <div className="flex items-center justify-between p-2.5 rounded-xl border border-[#FCE4E8] bg-[#FFF5F7] text-xs">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formShopeeSync}
                     onChange={(e) => setFormShopeeSync(e.target.checked)}
-                    className="rounded text-[#F43F5E] focus:ring-[#F43F5E]"
+                    className="rounded accent-[#800020]"
                   />
-                  <span className="font-semibold text-slate-800">Sinkronisasi Otomatis ke Shopee</span>
+                  <span className="font-bold text-black">Sinkronisasi Otomatis ke Shopee</span>
                 </label>
-                <span className="text-[10px] text-slate-400 font-mono">Barcode: {editingProduct.barcode}</span>
+                <span className="text-[10px] text-stone-600 font-mono">Barcode: {editingProduct.barcode}</span>
               </div>
 
               {/* Action Buttons: Delete Product & Save */}
-              <div className="pt-3 flex items-center justify-between gap-3 border-t border-pink-100">
+              <div className="pt-3 flex items-center justify-between gap-3 border-t border-[#FCE4E8]">
                 {isConfirmingDeleteProduct ? (
-                  <div className="flex items-center gap-1.5 p-1 bg-rose-50 border border-rose-200 rounded-xl animate-in fade-in">
-                    <span className="text-[11px] font-bold text-rose-700 pl-1.5">Hapus barang ini?</span>
+                  <div className="flex items-center gap-1.5 p-1 bg-[#FCE8EB] border border-[#F8CCD4] rounded-xl animate-in fade-in">
+                    <span className="text-[11px] font-bold text-[#800020] pl-1.5">Hapus barang ini?</span>
                     <button
                       type="button"
                       onClick={() => executeDeleteProduct(editingProduct.id)}
-                      className="px-2.5 py-1 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg cursor-pointer"
+                      className="px-2.5 py-1 text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-lg cursor-pointer"
                     >
                       Ya, Hapus
                     </button>
                     <button
                       type="button"
                       onClick={() => setIsConfirmingDeleteProduct(false)}
-                      className="px-2 py-1 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-100 rounded-lg cursor-pointer"
+                      className="px-2 py-1 text-xs font-bold text-black bg-white hover:bg-[#FFF5F7] rounded-lg cursor-pointer"
                     >
                       Batal
                     </button>
@@ -861,7 +863,7 @@ export const InventoryView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsConfirmingDeleteProduct(true)}
-                    className="px-3.5 py-2.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+                    className="px-3.5 py-2.5 text-xs font-bold text-[#800020] bg-[#FCE8EB] hover:bg-[#F8CCD4] border border-[#F8CCD4] rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
                     title="Hapus produk ini dari stok"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -873,13 +875,13 @@ export const InventoryView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setEditingProduct(null)}
-                    className="px-4 py-2.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer"
+                    className="px-4 py-2.5 text-xs font-bold text-black bg-[#FCE8EB] hover:bg-[#F8CCD4] rounded-xl cursor-pointer"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 text-xs font-bold text-white bg-[#F43F5E] hover:bg-[#E11D48] rounded-xl transition-colors shadow-2xs cursor-pointer"
+                    className="px-5 py-2.5 text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-xl transition-colors shadow-2xs cursor-pointer"
                   >
                     Simpan Perubahan
                   </button>
@@ -893,20 +895,20 @@ export const InventoryView: React.FC = () => {
 
       {/* 5. MODAL TAMBAH PRODUK BARU */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl shadow-2xl border border-pink-100 max-w-lg w-full p-6 animate-in zoom-in-95 duration-150 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-pink-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl shadow-2xl border border-[#FCE4E8] max-w-lg w-full p-6 animate-in zoom-in-95 duration-150 space-y-4 max-h-[90vh] overflow-y-auto text-black">
+            <div className="flex items-center justify-between pb-3 border-b border-[#FCE4E8]">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-pink-50 text-[#F43F5E] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-[#FCE8EB] text-[#800020] flex items-center justify-center border border-[#F8CCD4]">
                   <Plus className="w-4 h-4" />
                 </div>
-                <h3 className="font-bold text-sm text-slate-900">
+                <h3 className="font-black text-sm text-black">
                   Tambah Produk Cetakan &amp; Perabot Baru
                 </h3>
               </div>
               <button 
                 onClick={() => setIsAddModalOpen(false)}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-900 cursor-pointer"
+                className="p-1 rounded-full text-stone-500 hover:text-black cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -914,13 +916,13 @@ export const InventoryView: React.FC = () => {
 
             <form onSubmit={handleSaveProduct} className="space-y-3.5">
               {formError && (
-                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold flex items-center gap-1.5">
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                <div className="p-2.5 rounded-xl bg-[#FCE8EB] border border-[#F8CCD4] text-[#800020] text-xs font-bold flex items-center gap-1.5">
+                  <Info className="w-4 h-4 shrink-0" />
                   <span>{formError}</span>
                 </div>
               )}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-black mb-1">
                   Nama Barang:
                 </label>
                 <input
@@ -928,20 +930,20 @@ export const InventoryView: React.FC = () => {
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="Contoh: Cetakan Pukis 10 Lubang Teflon"
-                  className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-pink-200 bg-white text-slate-900 focus:ring-2 focus:ring-[#F43F5E]"
+                  className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-black mb-1">
                     Kategori:
                   </label>
                   <select
                     value={formCategory}
                     onChange={(e) => setFormCategory(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-pink-200 bg-white text-slate-900"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                   >
                     {categories.filter(c => c !== 'Semua').map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
@@ -949,7 +951,7 @@ export const InventoryView: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-black mb-1">
                     Satuan:
                   </label>
                   <input
@@ -957,34 +959,34 @@ export const InventoryView: React.FC = () => {
                     value={formUnit}
                     onChange={(e) => setFormUnit(e.target.value)}
                     placeholder="buah, loyang, set, pcs"
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-pink-200 bg-white text-slate-900"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-black mb-1">
                     Jumlah Stok Masuk:
                   </label>
                   <input
                     type="number"
                     value={formStock}
                     onChange={(e) => setFormStock(e.target.value)}
-                    className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-pink-200 bg-white text-slate-900"
+                    className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                     min="0"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-black mb-1">
                     Batas Minimum Alert:
                   </label>
                   <input
                     type="number"
                     value={formMinStock}
                     onChange={(e) => setFormMinStock(e.target.value)}
-                    className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-pink-200 bg-white text-slate-900"
+                    className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                     min="1"
                     required
                   />
@@ -993,33 +995,33 @@ export const InventoryView: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-black mb-1">
                     Harga Modal (HPP):
                   </label>
                   <input
                     type="text"
                     value={formBuyPrice}
                     onChange={(e) => setFormBuyPrice(e.target.value)}
-                    className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-pink-200 bg-white text-slate-900"
+                    className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-black mb-1">
                     Harga Jual:
                   </label>
                   <input
                     type="text"
                     value={formSellPrice}
                     onChange={(e) => setFormSellPrice(e.target.value)}
-                    className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-pink-200 bg-white text-[#F43F5E]"
+                    className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-[#FCE4E8] bg-white text-[#800020] focus:ring-2 focus:ring-[#800020] focus:outline-none"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-black mb-1">
                   URL Gambar Produk:
                 </label>
                 <div className="flex gap-2">
@@ -1028,12 +1030,12 @@ export const InventoryView: React.FC = () => {
                     value={formImageUrl}
                     onChange={(e) => setFormImageUrl(e.target.value)}
                     placeholder="https://..."
-                    className="flex-1 px-3 py-2 text-xs rounded-xl border border-pink-200 bg-white text-slate-900"
+                    className="flex-1 px-3 py-2 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => setIsCameraPhotoModalOpen(true)}
-                    className="px-3 py-2 text-xs font-bold text-[#F43F5E] bg-pink-50 border border-pink-200 rounded-xl hover:bg-pink-100 flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-2 text-xs font-bold text-[#800020] bg-[#FCE8EB] border border-[#F8CCD4] rounded-xl hover:bg-[#F8CCD4] flex items-center gap-1 cursor-pointer"
                   >
                     <Camera className="w-3.5 h-3.5" />
                     Kamera
@@ -1045,13 +1047,13 @@ export const InventoryView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 rounded-xl cursor-pointer"
+                  className="px-4 py-2 text-xs font-bold text-black bg-[#FCE8EB] hover:bg-[#F8CCD4] rounded-xl cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs font-bold text-white bg-[#F43F5E] hover:bg-[#E11D48] rounded-xl transition-colors shadow-2xs cursor-pointer"
+                  className="px-5 py-2 text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-xl transition-colors shadow-2xs cursor-pointer"
                 >
                   Tambahkan Produk
                 </button>
@@ -1063,10 +1065,10 @@ export const InventoryView: React.FC = () => {
 
       {/* 6. MODAL KELOLA & HAPUS KATEGORI STOK */}
       {isCategoryManageOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl shadow-2xl border border-pink-100 max-w-md w-full p-6 animate-in zoom-in-95 duration-150 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-pink-100">
-              <h3 className="font-bold text-sm text-slate-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl shadow-2xl border border-[#FCE4E8] max-w-md w-full p-6 animate-in zoom-in-95 duration-150 space-y-4 text-black">
+            <div className="flex items-center justify-between pb-3 border-b border-[#FCE4E8]">
+              <h3 className="font-black text-sm text-black">
                 Kelola Kategori Stok
               </h3>
               <button 
@@ -1074,7 +1076,7 @@ export const InventoryView: React.FC = () => {
                   setIsCategoryManageOpen(false);
                   setNewCategoryName('');
                 }}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-900 cursor-pointer"
+                className="p-1 rounded-full text-stone-500 hover:text-black cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1090,7 +1092,7 @@ export const InventoryView: React.FC = () => {
               }}
               className="space-y-2"
             >
-              <label className="block text-xs font-semibold text-slate-700">
+              <label className="block text-xs font-bold text-black">
                 Tambah Kategori Baru:
               </label>
               <div className="flex gap-2">
@@ -1099,11 +1101,11 @@ export const InventoryView: React.FC = () => {
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   placeholder="Contoh: Cetakan Silikon, Loyang Pizza, dll"
-                  className="flex-1 px-3 py-2 text-xs rounded-xl border border-pink-200 bg-white text-slate-900 focus:ring-2 focus:ring-[#F43F5E]"
+                  className="flex-1 px-3 py-2 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                 />
                 <button
                   type="submit"
-                  className="px-3.5 py-2 text-xs font-bold text-white bg-[#F43F5E] hover:bg-[#E11D48] rounded-xl cursor-pointer shrink-0"
+                  className="px-3.5 py-2 text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-xl cursor-pointer shrink-0"
                 >
                   Tambah
                 </button>
@@ -1112,10 +1114,10 @@ export const InventoryView: React.FC = () => {
 
             {/* List Kategori dengan Tombol Hapus */}
             <div className="space-y-2 pt-2">
-              <label className="block text-xs font-semibold text-slate-700">
+              <label className="block text-xs font-bold text-black">
                 Daftar Kategori Saat Ini:
               </label>
-              <div className="max-h-56 overflow-y-auto space-y-1.5 divide-y divide-pink-50">
+              <div className="max-h-56 overflow-y-auto space-y-1.5 divide-y divide-[#FCE4E8]">
                 {categories.map((cat) => {
                   const isDeletable = cat !== 'Semua';
                   const prodCount = products.filter(p => cat === 'Semua' || p.category === cat).length;
@@ -1123,25 +1125,25 @@ export const InventoryView: React.FC = () => {
                   return (
                     <div key={cat} className="pt-1.5 first:pt-0 flex items-center justify-between text-xs">
                       <div>
-                        <span className="font-bold text-slate-800">{cat}</span>
-                        <span className="text-[10px] text-slate-400 ml-1.5 font-mono">({prodCount} produk)</span>
+                        <span className="font-bold text-black">{cat}</span>
+                        <span className="text-[10px] text-stone-600 ml-1.5 font-mono">({prodCount} produk)</span>
                       </div>
 
                       {isDeletable ? (
                         categoryToDelete === cat ? (
                           <div className="flex items-center gap-1.5 animate-in fade-in">
-                            <span className="text-[10px] text-rose-600 font-bold">Hapus kategori?</span>
+                            <span className="text-[10px] text-[#800020] font-bold">Hapus kategori?</span>
                             <button
                               type="button"
                               onClick={() => executeDeleteCategory(cat)}
-                              className="px-2 py-0.5 text-[10px] font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-md cursor-pointer transition-colors shadow-2xs"
+                              className="px-2 py-0.5 text-[10px] font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-md cursor-pointer transition-colors shadow-2xs"
                             >
                               Ya, Hapus
                             </button>
                             <button
                               type="button"
                               onClick={() => setCategoryToDelete(null)}
-                              className="px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md cursor-pointer transition-colors"
+                              className="px-1.5 py-0.5 text-[10px] font-bold text-black bg-[#FCE8EB] hover:bg-[#F8CCD4] rounded-md cursor-pointer transition-colors"
                             >
                               Batal
                             </button>
@@ -1150,14 +1152,14 @@ export const InventoryView: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setCategoryToDelete(cat)}
-                            className="px-2.5 py-1 text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                            className="px-2.5 py-1 text-[11px] font-bold text-[#800020] bg-[#FCE8EB] hover:bg-[#F8CCD4] rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-3 h-3" />
                             <span>Hapus</span>
                           </button>
                         )
                       ) : (
-                        <span className="text-[10px] text-slate-400 font-semibold px-2 py-0.5 bg-slate-100 rounded-lg">
+                        <span className="text-[10px] text-black font-bold px-2 py-0.5 bg-[#FFF5F7] border border-[#FCE4E8] rounded-lg">
                           Default
                         </span>
                       )}
@@ -1167,13 +1169,13 @@ export const InventoryView: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-2 border-t border-pink-100 flex justify-end">
+            <div className="pt-2 border-t border-[#FCE4E8] flex justify-end">
               <button
                 onClick={() => {
                   setIsCategoryManageOpen(false);
                   setNewCategoryName('');
                 }}
-                className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer"
+                className="px-4 py-2 text-xs font-bold text-black bg-[#FCE8EB] hover:bg-[#F8CCD4] rounded-xl cursor-pointer"
               >
                 Selesai
               </button>

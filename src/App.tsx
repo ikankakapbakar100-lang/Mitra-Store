@@ -64,7 +64,7 @@ function POSApp() {
 
   // 2. Mode Kasir POS atau Mode Kelola Toko
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans selection:bg-[#F43F5E] selection:text-white">
+    <div className="min-h-screen bg-[#FFF0F3] text-black flex flex-col font-sans selection:bg-[#800020] selection:text-white">
       
       {/* Top Header */}
       <Header
@@ -77,7 +77,7 @@ function POSApp() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 pb-16">
+      <main className="flex-1 pb-16 bg-[#FFF0F3]">
         {/* OPSI 1: KHUSUS KASIR POS (Hanya Catat & Terima Pesanan, Tanpa Tambah Stok) */}
         {appMode === 'pos' && (
           <CashierView />
@@ -113,18 +113,18 @@ function POSApp() {
         }}
       />
 
-      {/* Minimalist Footer in Pink & White */}
-      <footer className="border-t border-pink-100 bg-white/90 py-4 text-center text-xs text-slate-400">
+      {/* Minimalist Footer in Cream Pink & Maroon */}
+      <footer className="border-t border-[#FCE4E8] bg-[#FFF0F3]/95 py-4 text-center text-xs text-black">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span>&copy; 2026</span>
-            <strong className="text-slate-800">MitraStore</strong>
-            <span className="text-[#F43F5E] font-semibold">· POS Kasir Pink &amp; Putih Minimalis</span>
+            <strong className="text-black font-extrabold">MitraStore</strong>
+            <span className="text-[#800020] font-bold">· POS Kasir Cream Pink &amp; Merah Marron</span>
           </div>
-          <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400">
+          <div className="flex items-center gap-3 text-[11px] font-mono text-black">
             <button 
               onClick={() => setAppMode('welcome')}
-              className="text-[#F43F5E] hover:underline font-semibold"
+              className="text-[#800020] hover:underline font-bold cursor-pointer"
             >
               Ganti Mode [ESC]
             </button>

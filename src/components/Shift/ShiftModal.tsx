@@ -19,7 +19,7 @@ interface ShiftModalProps {
 }
 
 export const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose }) => {
-  const { currentShift, openShift, closeShift, currentUser, transactions, expenses } = usePOS();
+  const { currentShift, openShift, closeShift, transactions, expenses } = usePOS();
   
   const [initialCashInput, setInitialCashInput] = useState<string>('200000');
   const [actualCashInput, setActualCashInput] = useState<string>('');
@@ -69,18 +69,25 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-pink-100 dark:border-zinc-800 max-w-md w-full p-6 animate-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between pb-4 border-b border-pink-100 dark:border-zinc-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div className="bg-white rounded-3xl shadow-2xl border border-[#FCE4E8] max-w-md w-full p-6 text-black animate-in zoom-in-95 duration-150">
+        <div className="flex items-center justify-between pb-4 border-b border-[#FCE4E8]">
           <div className="flex items-center gap-2">
-            <Wallet className="w-5 h-5 text-[#F43F5E]" />
-            <h3 className="font-bold text-base text-slate-900 dark:text-white">
-              Shift Kasir &amp; Saldo Laci
-            </h3>
+            <div className="p-2 rounded-xl bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4]">
+              <Wallet className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-black text-base text-black">
+                Shift Kasir &amp; Saldo Laci
+              </h3>
+              <p className="text-[11px] text-[#800020] font-bold">
+                Rekonsiliasi Uang Fisik Kasir
+              </p>
+            </div>
           </div>
           <button 
             onClick={onClose} 
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+            className="p-1.5 rounded-full text-stone-500 hover:text-black hover:bg-[#FCE8EB] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -88,44 +95,44 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose }) => {
 
         {currentShift && currentShift.isOpen ? (
           <div className="mt-4 space-y-4">
-            <div className="bg-pink-50/40 dark:bg-zinc-800/50 rounded-2xl p-4 border border-pink-100 dark:border-zinc-700 space-y-2">
-              <div className="flex justify-between text-xs text-slate-500 dark:text-zinc-400">
-                <span>Kasir Aktif:</span>
-                <span className="font-bold text-slate-900 dark:text-white">{currentShift.cashierName}</span>
+            <div className="bg-[#FFF5F7] rounded-2xl p-4 border border-[#FCE4E8] space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-stone-700 font-medium">Kasir Aktif:</span>
+                <span className="font-bold text-black">{currentShift.cashierName}</span>
               </div>
-              <div className="flex justify-between text-xs text-slate-500 dark:text-zinc-400">
-                <span>Waktu Mulai:</span>
-                <span className="font-mono text-slate-900 dark:text-white">{formatDateTime(currentShift.startTime)}</span>
+              <div className="flex justify-between">
+                <span className="text-stone-700 font-medium">Waktu Mulai:</span>
+                <span className="font-mono text-black">{formatDateTime(currentShift.startTime)}</span>
               </div>
-              <div className="flex justify-between text-xs text-slate-500 dark:text-zinc-400">
-                <span>Saldo Awal Laci:</span>
-                <span className="font-mono font-bold text-slate-900 dark:text-white">{formatRupiah(currentShift.initialCash)}</span>
+              <div className="flex justify-between">
+                <span className="text-stone-700 font-medium">Saldo Awal Laci:</span>
+                <span className="font-mono font-bold text-black">{formatRupiah(currentShift.initialCash)}</span>
               </div>
-              <div className="flex justify-between text-xs text-slate-500 dark:text-zinc-400">
-                <span>Penjualan Tunai ({shiftTrxCount} trx):</span>
-                <span className="font-mono font-bold text-emerald-600">+{formatRupiah(shiftCashTotal)}</span>
+              <div className="flex justify-between">
+                <span className="text-stone-700 font-medium">Penjualan Tunai ({shiftTrxCount} trx):</span>
+                <span className="font-mono font-bold text-emerald-700">+{formatRupiah(shiftCashTotal)}</span>
               </div>
-              <div className="flex justify-between text-xs text-slate-500 dark:text-zinc-400">
-                <span>Pengeluaran Kas ({shiftExpenseCount} kali):</span>
-                <span className="font-mono font-bold text-rose-600">-{formatRupiah(shiftExpenseTotal)}</span>
+              <div className="flex justify-between">
+                <span className="text-stone-700 font-medium">Pengeluaran Kas ({shiftExpenseCount} kali):</span>
+                <span className="font-mono font-bold text-[#800020]">-{formatRupiah(shiftExpenseTotal)}</span>
               </div>
-              <div className="pt-2 border-t border-pink-100 dark:border-zinc-700 flex justify-between text-xs font-bold text-slate-900 dark:text-white">
-                <span>Saldo Akhir Ekspektasi:</span>
-                <span className="font-mono text-[#F43F5E] text-sm">{formatRupiah(expectedCash)}</span>
+              <div className="pt-2 border-t border-[#FCE4E8] flex justify-between text-xs font-bold text-black">
+                <span>Saldo Akhir Target (Fisik):</span>
+                <span className="font-mono text-[#800020] text-sm">{formatRupiah(expectedCash)}</span>
               </div>
             </div>
 
             <form onSubmit={handleCloseShift} className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-400 mb-1">
-                  Hitung Uang Fisik di Laci:
+                <label className="block text-xs font-bold text-black mb-1">
+                  Hitung Uang Fisik di Laci (Rp):
                 </label>
                 <input
                   type="text"
                   value={actualCashInput}
                   onChange={(e) => setActualCashInput(e.target.value)}
                   placeholder="Misal: 450000"
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-pink-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-[#F43F5E] focus:outline-none"
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-[#FCE4E8] bg-white text-black font-mono focus:ring-2 focus:ring-[#800020] focus:outline-none"
                   required
                 />
               </div>
@@ -133,10 +140,10 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose }) => {
               {actualCashInput && (
                 <div className={`p-3 rounded-xl text-xs flex items-center justify-between font-bold ${
                   difference === 0 
-                    ? 'bg-emerald-50 text-emerald-800' 
+                    ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' 
                     : difference > 0 
-                    ? 'bg-blue-50 text-blue-800' 
-                    : 'bg-rose-50 text-rose-800'
+                    ? 'bg-blue-100 text-blue-900 border border-blue-300' 
+                    : 'bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4]'
                 }`}>
                   <span>Selisih Kas:</span>
                   <span className="font-mono text-sm">
@@ -146,7 +153,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose }) => {
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+                <label className="block text-xs font-bold text-black mb-1">
                   Catatan Rekonsiliasi (Opsional):
                 </label>
                 <textarea
@@ -154,7 +161,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose }) => {
                   value={notesInput}
                   onChange={(e) => setNotesInput(e.target.value)}
                   placeholder="Catatan serah terima kasir..."
-                  className="w-full px-3 py-1.5 text-xs rounded-xl border border-pink-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#F43F5E] resize-none"
+                  className="w-full px-3 py-1.5 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none resize-none"
                 />
               </div>
 
@@ -162,15 +169,15 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose }) => {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 py-2 text-xs font-semibold text-slate-600 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-800 rounded-xl"
+                  className="flex-1 py-2 text-xs font-bold text-black bg-[#FCE8EB] hover:bg-[#F8CCD4] rounded-xl cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 text-xs font-bold text-white bg-slate-900 dark:bg-white dark:text-slate-900 hover:bg-[#F43F5E] dark:hover:bg-[#F43F5E] dark:hover:text-white rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2 text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                 >
-                  <DoorClosed className="w-4 h-4 text-pink-400" />
+                  <DoorClosed className="w-4 h-4" />
                   <span>Tutup &amp; Setor Shift</span>
                 </button>
               </div>
@@ -178,12 +185,12 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose }) => {
           </div>
         ) : (
           <form onSubmit={handleOpenShift} className="mt-4 space-y-4">
-            <div className="bg-pink-50 p-3 rounded-2xl border border-pink-200 text-xs text-[#BE185D]">
+            <div className="bg-[#FFF5F7] p-3 rounded-2xl border border-[#F8CCD4] text-xs text-[#800020] font-medium leading-relaxed">
               Shift kasir belum aktif. Masukkan uang modal saldo awal di laci kasir untuk mulai bertransaksi.
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+              <label className="block text-xs font-bold text-black mb-1">
                 Saldo Awal di Laci (Rp):
               </label>
               <input
@@ -191,7 +198,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose }) => {
                 value={initialCashInput}
                 onChange={(e) => setInitialCashInput(e.target.value)}
                 placeholder="200000"
-                className="w-full px-3 py-2 text-sm rounded-xl border border-pink-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-[#F43F5E]"
+                className="w-full px-3 py-2 text-sm rounded-xl border border-[#FCE4E8] bg-white text-black font-mono focus:ring-2 focus:ring-[#800020] focus:outline-none"
                 required
               />
             </div>
@@ -202,7 +209,7 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose }) => {
                   key={amount}
                   type="button"
                   onClick={() => setInitialCashInput(amount.toString())}
-                  className="flex-1 py-1.5 text-xs bg-pink-50/60 dark:bg-zinc-800 hover:bg-pink-100 border border-pink-100 dark:border-zinc-700 text-slate-800 dark:text-zinc-200 rounded-xl font-mono font-semibold transition-colors"
+                  className="flex-1 py-1.5 text-xs bg-[#FFF5F7] hover:bg-[#FCE8EB] border border-[#FCE4E8] text-black rounded-xl font-mono font-bold transition-colors cursor-pointer"
                 >
                   {formatRupiah(amount)}
                 </button>
@@ -213,13 +220,13 @@ export const ShiftModal: React.FC<ShiftModalProps> = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2 text-xs font-semibold text-slate-600 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-800 rounded-xl"
+                className="flex-1 py-2 text-xs font-bold text-black bg-[#FCE8EB] hover:bg-[#F8CCD4] rounded-xl cursor-pointer"
               >
                 Tutup
               </button>
               <button
                 type="submit"
-                className="flex-1 py-2 text-xs font-bold text-white bg-[#F43F5E] hover:bg-[#E11D48] rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                className="flex-1 py-2 text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
               >
                 <DoorOpen className="w-4 h-4" />
                 <span>Buka Shift Sekarang</span>

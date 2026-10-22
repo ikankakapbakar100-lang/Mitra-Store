@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { Logo } from './Logo';
 import { 
   ShoppingCart, 
-  Store,
+  Store, 
   Package, 
   TrendingUp, 
   Users, 
@@ -37,12 +37,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSelectMode }) =>
   ];
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-[#FFF5F7] via-white to-[#FFF0F4] flex flex-col justify-between p-4 sm:p-8 select-none">
+    <div className="min-h-screen bg-gradient-to-b from-[#FFF0F2] via-[#FFF5F5] to-[#FCEBED] flex flex-col justify-between p-4 sm:p-8 select-none text-black">
       
-      {/* Header Atas: Logo MitraStore Minimalis */}
+      {/* Header Atas: Logo MitraStore */}
       <div className="flex items-center justify-between max-w-4xl mx-auto w-full pt-2">
         <Logo size="md" />
-        <span className="text-[11px] font-mono font-semibold text-slate-400">
+        <span className="text-[11px] font-mono font-bold text-black bg-white/80 px-3 py-1 rounded-full border border-[#FCE4E8]">
           Perabotan &amp; Cetakan Kue
         </span>
       </div>
@@ -52,13 +52,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSelectMode }) =>
         
         {/* Logo & Judul Ringkas */}
         <div className="text-center space-y-1.5">
-          <div className="inline-flex items-center justify-center p-3 rounded-3xl bg-pink-100/70 text-[#F43F5E] mb-1">
+          <div className="inline-flex items-center justify-center p-3 rounded-3xl bg-[#FCE8EB] text-[#800020] mb-1 border border-[#F8CCD4] shadow-xs">
             <Logo size="xl" showText={false} />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Mitra<span className="text-[#F43F5E]">Store</span>
+          <h1 className="text-3xl sm:text-4xl font-black text-black tracking-tight">
+            Mitra<span className="text-[#800020]">Store</span>
           </h1>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+          <p className="text-xs font-black text-black uppercase tracking-widest">
             Pilih Mode Akses
           </p>
         </div>
@@ -69,58 +69,58 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSelectMode }) =>
           {/* SIMBOLIK 1: KASIR POS */}
           <button
             onClick={() => setIsLoginModalOpen(true)}
-            className="group relative bg-white hover:bg-pink-50/30 rounded-3xl p-7 border-2 border-pink-200 hover:border-[#F43F5E] shadow-sm hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-200 cursor-pointer flex flex-col items-center justify-center text-center gap-4"
+            className="group relative bg-white hover:bg-[#FFF5F5] rounded-3xl p-7 border-2 border-[#FCE4E8] hover:border-[#800020] shadow-sm hover:shadow-xl hover:shadow-rose-950/10 transition-all duration-200 cursor-pointer flex flex-col items-center justify-center text-center gap-4"
           >
             {/* Ikon Simbolik Utama Kasir POS */}
-            <div className="w-16 h-16 rounded-3xl bg-[#F43F5E] text-white flex items-center justify-center shadow-lg shadow-pink-500/25 group-hover:scale-110 transition-transform">
+            <div className="w-16 h-16 rounded-3xl bg-[#800020] text-white flex items-center justify-center shadow-lg shadow-rose-950/25 group-hover:scale-110 transition-transform">
               <ShoppingCart className="w-8 h-8" />
             </div>
 
             <div>
-              <h2 className="text-2xl font-black text-slate-900 group-hover:text-[#F43F5E] transition-colors">
+              <h2 className="text-2xl font-black text-black group-hover:text-[#800020] transition-colors">
                 Kasir POS
               </h2>
-              <span className="text-xs font-semibold text-[#F43F5E]">
+              <span className="text-xs font-bold text-[#800020]">
                 Transaksi &amp; Struk
               </span>
             </div>
 
-            <div className="w-9 h-9 rounded-full bg-pink-50 text-[#F43F5E] group-hover:bg-[#F43F5E] group-hover:text-white flex items-center justify-center transition-colors">
+            <div className="w-9 h-9 rounded-full bg-[#FCE8EB] text-[#800020] group-hover:bg-[#800020] group-hover:text-white flex items-center justify-center transition-colors">
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </div>
           </button>
 
           {/* SIMBOLIK 2: KELOLA TOKO */}
-          <div className="group relative bg-white rounded-3xl p-7 border-2 border-slate-200 hover:border-[#F43F5E] shadow-sm hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-200 flex flex-col items-center justify-between text-center gap-4">
+          <div className="group relative bg-white rounded-3xl p-7 border-2 border-[#FCE4E8] hover:border-[#800020] shadow-sm hover:shadow-xl hover:shadow-rose-950/10 transition-all duration-200 flex flex-col items-center justify-between text-center gap-4">
             
             {/* Tombol Utama Buka Kelola Toko */}
             <button
               onClick={() => onSelectMode('management', 'inventory')}
               className="flex flex-col items-center justify-center gap-3 cursor-pointer w-full"
             >
-              <div className="w-16 h-16 rounded-3xl bg-slate-900 text-white flex items-center justify-center shadow-lg group-hover:bg-[#F43F5E] group-hover:scale-110 transition-all">
+              <div className="w-16 h-16 rounded-3xl bg-black text-white flex items-center justify-center shadow-lg group-hover:bg-[#800020] group-hover:scale-110 transition-all">
                 <Store className="w-8 h-8" />
               </div>
 
               <div>
-                <h2 className="text-2xl font-black text-slate-900 group-hover:text-[#F43F5E] transition-colors">
+                <h2 className="text-2xl font-black text-black group-hover:text-[#800020] transition-colors">
                   Kelola Toko
                 </h2>
-                <span className="text-xs font-semibold text-slate-500">
+                <span className="text-xs font-bold text-black">
                   Inventaris &amp; Bisnis
                 </span>
               </div>
             </button>
 
             {/* Ikon-Ikon Simbolik Pintasan Kelola Toko */}
-            <div className="flex items-center justify-center gap-2 pt-2 border-t border-slate-100 w-full">
+            <div className="flex items-center justify-center gap-2 pt-2 border-t border-[#FCE4E8] w-full">
               {quickManagementIcons.map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
                     key={item.id}
                     onClick={() => onSelectMode('management', item.id)}
-                    className="p-2 rounded-xl bg-slate-50 hover:bg-pink-100 text-slate-600 hover:text-[#F43F5E] transition-colors cursor-pointer"
+                    className="p-2 rounded-xl bg-[#FFF5F5] hover:bg-[#FCE8EB] text-black hover:text-[#800020] border border-[#FCE4E8] transition-colors cursor-pointer"
                     title={item.title}
                   >
                     <Icon className="w-4 h-4" />
@@ -133,12 +133,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSelectMode }) =>
         </div>
 
         {/* Ringkasan Cepat Koleksi Produk */}
-        <div className="bg-white/90 backdrop-blur-xs rounded-2xl p-3 border border-pink-100 shadow-2xs">
-          <div className="flex items-center justify-between mb-2 px-1">
-            <span className="text-[11px] font-bold text-slate-700">
+        <div className="bg-white/95 backdrop-blur-xs rounded-2xl p-3.5 border border-[#FCE4E8] shadow-2xs">
+          <div className="flex items-center justify-between mb-2.5 px-1">
+            <span className="text-[11px] font-bold text-black">
               Koleksi Cetakan &amp; Perabot ({products.length} Item)
             </span>
-            <span className="text-[10px] font-semibold text-[#F43F5E]">
+            <span className="text-[10px] font-bold text-[#800020] bg-[#FCE8EB] px-2 py-0.5 rounded-md border border-[#F8CCD4]">
               Kamera &amp; Keyboard Siap
             </span>
           </div>
@@ -148,19 +148,19 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSelectMode }) =>
               <div 
                 key={item.id} 
                 onClick={() => setIsLoginModalOpen(true)}
-                className="flex items-center gap-2 p-1.5 rounded-xl bg-pink-50/40 hover:bg-pink-50 border border-pink-100/60 transition-all cursor-pointer"
+                className="flex items-center gap-2 p-2 rounded-xl bg-[#FFF8F8] hover:bg-[#FCE8EB] border border-[#FCE4E8] transition-all cursor-pointer"
               >
                 <img 
                   src={item.imageUrl} 
                   alt={item.name} 
                   referrerPolicy="no-referrer"
-                  className="w-8 h-8 rounded-lg object-cover shrink-0 border border-pink-200/60" 
+                  className="w-8 h-8 rounded-lg object-cover shrink-0 border border-[#F8CCD4]" 
                 />
                 <div className="truncate text-left">
-                  <div className="text-[11px] font-bold text-slate-800 truncate">
+                  <div className="text-[11px] font-bold text-black truncate">
                     {item.name}
                   </div>
-                  <div className="text-[10px] font-bold font-mono text-[#F43F5E]">
+                  <div className="text-[10px] font-bold font-mono text-[#800020]">
                     {formatRupiah(item.sellPrice)}
                   </div>
                 </div>
@@ -172,8 +172,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSelectMode }) =>
       </div>
 
       {/* Footer Minimalis */}
-      <div className="text-center text-xs text-slate-400 pb-1">
-        <span className="font-bold text-slate-700">MitraStore</span> · POS Kasir Pink &amp; Putih Minimalis
+      <div className="text-center text-xs text-black pb-1">
+        <span className="font-extrabold text-black">MitraStore</span> · POS Kasir Cream Pink &amp; Merah Marron
       </div>
 
       {/* Cashier Login Password Modal */}

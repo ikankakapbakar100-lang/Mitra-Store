@@ -14,8 +14,7 @@ import {
   RefreshCw, 
   KeyRound, 
   CheckCircle2, 
-  AlertTriangle,
-  ShieldCheck
+  AlertTriangle 
 } from 'lucide-react';
 
 export const BackupView: React.FC = () => {
@@ -113,25 +112,25 @@ export const BackupView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-black">
       
-      {/* Cloud Backup Hero Card in Minimalist Pink & White */}
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-pink-100 dark:border-zinc-800 p-6 shadow-sm">
+      {/* Cloud Backup Hero Card */}
+      <div className="bg-white rounded-3xl border border-[#FCE4E8] p-6 shadow-sm">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-pink-50 dark:bg-pink-950/50 text-[#F43F5E] flex items-center justify-center shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-[#FCE8EB] text-[#800020] flex items-center justify-center shrink-0 border border-[#F8CCD4]">
               <Cloud className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                <h3 className="font-black text-base text-black">
                   Cadangan Cloud Otomatis MitraStore
                 </h3>
-                <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-pink-100 text-[#BE185D] dark:bg-pink-950/60 dark:text-pink-300">
+                <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-[#800020] text-white">
                   REAL-TIME
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-xl">
+              <p className="text-xs text-stone-700 font-medium mt-1 max-w-xl">
                 Data transaksi kasir, stok fisik, dan pelanggan tersimpan otomatis di cloud terenkripsi.
               </p>
             </div>
@@ -140,7 +139,7 @@ export const BackupView: React.FC = () => {
           <button
             onClick={handleCloudSyncNow}
             disabled={isCloudBackingUp}
-            className="px-4 py-2.5 rounded-2xl text-xs font-bold text-white bg-[#F43F5E] hover:bg-[#E11D48] transition-colors flex items-center gap-2 shadow-xs shrink-0"
+            className="px-4 py-2.5 rounded-2xl text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] transition-colors flex items-center gap-2 shadow-xs shrink-0 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isCloudBackingUp ? 'animate-spin' : ''}`} />
             <span>Cadangkan Sekarang</span>
@@ -148,28 +147,28 @@ export const BackupView: React.FC = () => {
         </div>
 
         {/* Cloud Status Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-pink-50 dark:border-zinc-800">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-[#FCE4E8]">
           <div>
-            <div className="text-[11px] text-slate-400">Sinkron Terakhir:</div>
-            <div className="text-xs font-bold font-mono text-slate-900 dark:text-white mt-0.5">
+            <div className="text-[11px] font-bold text-stone-600">Sinkron Terakhir:</div>
+            <div className="text-xs font-bold font-mono text-black mt-0.5">
               {cloudBackup.lastBackupDate ? formatDateTime(cloudBackup.lastBackupDate) : 'Hari Ini'}
             </div>
           </div>
           <div>
-            <div className="text-[11px] text-slate-400">Entitas Tersimpan:</div>
-            <div className="text-xs font-bold font-mono text-slate-900 dark:text-white mt-0.5">
+            <div className="text-[11px] font-bold text-stone-600">Entitas Tersimpan:</div>
+            <div className="text-xs font-bold font-mono text-black mt-0.5">
               {products.length + transactions.length + customers.length} Records
             </div>
           </div>
           <div>
-            <div className="text-[11px] text-slate-400">Enkripsi:</div>
-            <div className="text-xs font-bold font-mono text-[#F43F5E] mt-0.5">
+            <div className="text-[11px] font-bold text-stone-600">Enkripsi:</div>
+            <div className="text-xs font-bold font-mono text-[#800020] mt-0.5">
               AES-GCM 256-bit
             </div>
           </div>
           <div>
-            <div className="text-[11px] text-slate-400">Checksum SHA-256:</div>
-            <div className="text-xs font-bold font-mono text-slate-500 mt-0.5 truncate">
+            <div className="text-[11px] font-bold text-stone-600">Checksum SHA-256:</div>
+            <div className="text-xs font-bold font-mono text-black mt-0.5 truncate">
               {cloudBackup.checksum.slice(0, 10)}...
             </div>
           </div>
@@ -177,15 +176,15 @@ export const BackupView: React.FC = () => {
       </div>
 
       {statusMessage && (
-        <div className={`p-3.5 rounded-2xl text-xs flex items-center gap-2 font-medium ${
+        <div className={`p-3.5 rounded-2xl text-xs flex items-center gap-2 font-bold ${
           statusMessage.type === 'success'
-            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200'
-            : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-200'
+            ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+            : 'bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4]'
         }`}>
           {statusMessage.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-700" />
           ) : (
-            <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+            <AlertTriangle className="w-4 h-4 shrink-0 text-[#800020]" />
           )}
           <span>{statusMessage.text}</span>
         </div>
@@ -195,21 +194,21 @@ export const BackupView: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Export Encrypted File */}
-        <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-pink-100 dark:border-zinc-800 p-5 space-y-4 shadow-sm">
-          <div className="flex items-center gap-2 pb-2 border-b border-pink-100 dark:border-zinc-800">
-            <Lock className="w-4 h-4 text-[#F43F5E]" />
-            <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+        <div className="bg-white rounded-3xl border border-[#FCE4E8] p-5 space-y-4 shadow-sm">
+          <div className="flex items-center gap-2 pb-2 border-b border-[#FCE4E8]">
+            <Lock className="w-4 h-4 text-[#800020]" />
+            <h4 className="font-black text-sm text-black">
               Ekspor Cadangan Terenkripsi
             </h4>
           </div>
 
-          <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+          <p className="text-xs text-stone-700 font-medium leading-relaxed">
             Kunci data Anda dengan kata sandi rahasia. Format enkripsi AES-GCM 256-bit standar militer menjaga privasi penuh.
           </p>
 
           <form onSubmit={handleExportEncrypted} className="space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+              <label className="block text-xs font-bold text-black mb-1">
                 Kata Sandi Kunci Backup:
               </label>
               <input
@@ -217,14 +216,14 @@ export const BackupView: React.FC = () => {
                 value={exportPassphrase}
                 onChange={(e) => setExportPassphrase(e.target.value)}
                 placeholder="Buat password enkripsi..."
-                className="w-full px-3 py-2 text-xs rounded-xl border border-pink-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#F43F5E]"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                 required
               />
             </div>
 
             <button
               type="submit"
-              className="w-full py-2.5 px-4 text-xs font-bold text-white bg-slate-900 dark:bg-white dark:text-slate-900 hover:bg-[#F43F5E] dark:hover:bg-[#F43F5E] dark:hover:text-white rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-xs"
+              className="w-full py-2.5 px-4 text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Unduh File (.enc.json)</span>
@@ -233,33 +232,33 @@ export const BackupView: React.FC = () => {
         </div>
 
         {/* Restore / Decrypt Backup File */}
-        <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-pink-100 dark:border-zinc-800 p-5 space-y-4 shadow-sm">
-          <div className="flex items-center gap-2 pb-2 border-b border-pink-100 dark:border-zinc-800">
-            <KeyRound className="w-4 h-4 text-[#F43F5E]" />
-            <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+        <div className="bg-white rounded-3xl border border-[#FCE4E8] p-5 space-y-4 shadow-sm">
+          <div className="flex items-center gap-2 pb-2 border-b border-[#FCE4E8]">
+            <KeyRound className="w-4 h-4 text-[#800020]" />
+            <h4 className="font-black text-sm text-black">
               Dekripsi &amp; Pulihkan Cadangan
             </h4>
           </div>
 
-          <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+          <p className="text-xs text-stone-700 font-medium leading-relaxed">
             Pilih file <code>.enc.json</code> dan masukkan kata sandi untuk memulihkan seluruh data transaksi dan katalog.
           </p>
 
           <form onSubmit={handleRestoreEncrypted} className="space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+              <label className="block text-xs font-bold text-black mb-1">
                 Pilih File Cadangan:
               </label>
               <input
                 type="file"
                 accept=".json,.enc.json"
                 onChange={handleFileUpload}
-                className="w-full text-xs text-slate-600 dark:text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-pink-50 file:text-[#F43F5E] hover:file:bg-pink-100"
+                className="w-full text-xs text-black file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#FCE8EB] file:text-[#800020] hover:file:bg-[#F8CCD4] cursor-pointer"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+              <label className="block text-xs font-bold text-black mb-1">
                 Kata Sandi Pembuka:
               </label>
               <input
@@ -267,7 +266,7 @@ export const BackupView: React.FC = () => {
                 value={importPassphrase}
                 onChange={(e) => setImportPassphrase(e.target.value)}
                 placeholder="Password file backup..."
-                className="w-full px-3 py-2 text-xs rounded-xl border border-pink-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#F43F5E]"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                 required
               />
             </div>
@@ -275,7 +274,7 @@ export const BackupView: React.FC = () => {
             <button
               type="submit"
               disabled={isDecrypting}
-              className="w-full py-2.5 px-4 text-xs font-bold text-white bg-[#F43F5E] hover:bg-[#E11D48] rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-xs"
+              className="w-full py-2.5 px-4 text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
             >
               {isDecrypting ? (
                 <>
@@ -294,30 +293,30 @@ export const BackupView: React.FC = () => {
       </div>
 
       {/* Reset Data */}
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-pink-100 dark:border-zinc-800 p-5 flex items-center justify-between shadow-sm">
+      <div className="bg-white rounded-3xl border border-[#FCE4E8] p-5 flex items-center justify-between shadow-sm">
         <div>
-          <h4 className="font-bold text-xs text-slate-900 dark:text-white">
+          <h4 className="font-black text-xs text-black">
             Reset ke Data Sampel Default
           </h4>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] text-stone-600 font-medium">
             Kembalikan seluruh inventaris dan data transaksi ke pengaturan awal.
           </p>
         </div>
         {isConfirmingReset ? (
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-rose-600">Yakin reset ke awal?</span>
+            <span className="text-xs font-bold text-[#800020]">Yakin reset ke awal?</span>
             <button
               onClick={() => {
                 setIsConfirmingReset(false);
                 resetToDefaultData();
               }}
-              className="px-3 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors shadow-xs cursor-pointer"
+              className="px-3 py-1.5 text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-xl transition-colors shadow-xs cursor-pointer"
             >
               Ya, Reset Semua
             </button>
             <button
               onClick={() => setIsConfirmingReset(false)}
-              className="px-2.5 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+              className="px-2.5 py-1.5 text-xs font-bold text-black bg-[#FCE8EB] hover:bg-[#F8CCD4] rounded-xl transition-colors cursor-pointer"
             >
               Batal
             </button>
@@ -325,7 +324,7 @@ export const BackupView: React.FC = () => {
         ) : (
           <button
             onClick={() => setIsConfirmingReset(true)}
-            className="px-3.5 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors border border-rose-200 dark:border-rose-900 cursor-pointer"
+            className="px-3.5 py-1.5 text-xs font-bold text-[#800020] hover:bg-[#FCE8EB] rounded-xl transition-colors border border-[#F8CCD4] cursor-pointer"
           >
             Reset Data
           </button>

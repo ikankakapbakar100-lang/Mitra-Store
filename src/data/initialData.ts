@@ -139,7 +139,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     category: 'Cetakan Kue',
     buyPrice: 80000,
     sellPrice: 125000,
-    stock: 4, // Low stock alert
+    stock: 24,
     minStock: 6,
     unit: 'buah',
     shopeeItemId: 'SHP-ITEM-102',
@@ -171,7 +171,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     category: 'Cetakan Kue',
     buyPrice: 15000,
     sellPrice: 28000,
-    stock: 0, // OUT OF STOCK
+    stock: 20,
     minStock: 8,
     unit: 'pcs',
     shopeeItemId: 'SHP-ITEM-104',
@@ -251,7 +251,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     category: 'Alat Masak & Wajan',
     buyPrice: 58000,
     sellPrice: 89000,
-    stock: 2, // Low stock alert
+    stock: 18,
     minStock: 6,
     unit: 'buah',
     shopeeItemId: 'SHP-ITEM-302',

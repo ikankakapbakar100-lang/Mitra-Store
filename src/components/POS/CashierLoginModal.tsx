@@ -9,7 +9,6 @@ import { StaffUser } from '../../types/pos';
 import { 
   UserCheck, 
   X, 
-  ShieldCheck, 
   AlertCircle,
   KeyRound,
   Eye,
@@ -113,7 +112,6 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
       setErrorMsg('');
       onSuccess();
     } else {
-      // Automatic clear on wrong password, so user can simply re-type without backspacing one by one
       setErrorMsg(`Kata sandi salah! Coba lagi (Default: "${selectedStaff.pin}")`);
       setPassword('');
       setIsShaking(true);
@@ -125,30 +123,30 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div 
-        className={`bg-white rounded-3xl shadow-2xl border border-pink-100 max-w-md w-full p-5 sm:p-6 transition-all duration-200 ${
+        className={`bg-white rounded-3xl shadow-2xl border border-[#FCE4E8] max-w-md w-full p-5 sm:p-6 transition-all duration-200 text-black ${
           isShaking ? 'animate-bounce' : 'animate-in zoom-in-95'
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3.5 border-b border-pink-100">
+        <div className="flex items-center justify-between pb-3.5 border-b border-[#FCE4E8]">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-pink-50 text-[#F43F5E] flex items-center justify-center border border-pink-100 shadow-2xs">
+            <div className="w-10 h-10 rounded-2xl bg-[#FCE8EB] text-[#800020] flex items-center justify-center border border-[#F8CCD4] shadow-2xs">
               <UserCheck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-sm sm:text-base text-slate-900">
+              <h3 className="font-black text-sm sm:text-base text-black">
                 Pilih Kasir Bertugas
               </h3>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-stone-600 font-medium">
                 Penanggung jawab sesi transaksi POS
               </p>
             </div>
           </div>
           <button 
-            onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+            onClick={onClose} 
+            className="p-1.5 rounded-full text-stone-500 hover:text-black hover:bg-[#FCE8EB] transition-colors cursor-pointer"
             title="Tutup"
           >
             <X className="w-5 h-5" />
@@ -160,22 +158,22 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
           /* FORM EDIT DATA KASIR */
           <form onSubmit={handleSaveStaffEdit} className="space-y-4 pt-4">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <Pencil className="w-3.5 h-3.5 text-[#F43F5E]" />
+              <h4 className="text-xs font-bold text-black flex items-center gap-1.5">
+                <Pencil className="w-3.5 h-3.5 text-[#800020]" />
                 Edit Data &amp; Nama Kasir
               </h4>
               <button
                 type="button"
                 onClick={() => setEditingStaff(null)}
-                className="text-[11px] text-slate-400 hover:text-slate-600 underline cursor-pointer"
+                className="text-[11px] text-stone-600 hover:text-black underline cursor-pointer font-medium"
               >
                 Batal
               </button>
             </div>
 
-            <div className="space-y-3 bg-pink-50/40 p-3.5 rounded-2xl border border-pink-100">
+            <div className="space-y-3 bg-[#FFF5F7] p-3.5 rounded-2xl border border-[#FCE4E8]">
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                <label className="block text-[11px] font-bold text-black mb-1">
                   Nama Penjaga Kasir:
                 </label>
                 <input
@@ -183,13 +181,13 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   placeholder="Contoh: Siti Rahma / Budi"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-pink-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#F43F5E]"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#800020]"
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                <label className="block text-[11px] font-bold text-black mb-1">
                   Kata Sandi (Password):
                 </label>
                 <input
@@ -197,21 +195,21 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
                   placeholder="Ketik kata sandi (angka/huruf)"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-pink-200 bg-white font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#F43F5E]"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#FCE4E8] bg-white font-mono text-black focus:outline-none focus:ring-2 focus:ring-[#800020]"
                 />
-                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                <span className="text-[10px] text-stone-600 mt-0.5 block font-medium">
                   Bisa menggunakan huruf, angka, atau kombinasi keyboard laptop.
                 </span>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                <label className="block text-[11px] font-bold text-black mb-1">
                   Peran / Jabatan:
                 </label>
                 <select
                   value={editRole}
                   onChange={(e) => setEditRole(e.target.value as any)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-pink-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#F43F5E]"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#800020]"
                 >
                   <option value="kasir">Kasir</option>
                   <option value="supervisor">Supervisor</option>
@@ -224,13 +222,13 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
               <button
                 type="button"
                 onClick={() => setEditingStaff(null)}
-                className="flex-1 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                className="flex-1 py-2 text-xs font-bold text-black bg-[#FCE8EB] hover:bg-[#F8CCD4] rounded-xl transition-colors cursor-pointer"
               >
                 Kembali
               </button>
               <button
                 type="submit"
-                className="flex-1 py-2 text-xs font-bold text-white bg-[#F43F5E] hover:bg-[#E11D48] rounded-xl transition-colors shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 py-2 text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-xl transition-colors shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Check className="w-3.5 h-3.5" />
                 Simpan Perubahan
@@ -244,10 +242,10 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
             {/* Grid Pilihan Kasir */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-700">
+                <label className="text-xs font-bold text-black">
                   Pilih Petugas Kasir:
                 </label>
-                <span className="text-[10px] text-slate-400">
+                <span className="text-[10px] text-stone-600 font-medium">
                   Tekan ikon ✏️ untuk edit nama
                 </span>
               </div>
@@ -261,8 +259,8 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
                       onClick={() => handleSelectStaff(staff)}
                       className={`p-2.5 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer group ${
                         isSelected
-                          ? 'border-[#F43F5E] bg-pink-50/80 ring-2 ring-[#F43F5E]/20 shadow-2xs'
-                          : 'border-pink-100 bg-white hover:border-pink-200 hover:bg-pink-50/20'
+                          ? 'border-[#800020] bg-[#FCE8EB] ring-2 ring-[#800020]/20 shadow-2xs'
+                          : 'border-[#FCE4E8] bg-white hover:border-[#F8CCD4] hover:bg-[#FFF5F7]'
                       }`}
                     >
                       <div className="flex items-center gap-2 truncate">
@@ -270,10 +268,10 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
                           {staff.name.charAt(0)}
                         </div>
                         <div className="truncate">
-                          <div className="text-xs font-bold text-slate-900 truncate">
+                          <div className="text-xs font-bold text-black truncate">
                             {staff.name}
                           </div>
-                          <div className="text-[9px] text-[#F43F5E] font-semibold uppercase">
+                          <div className="text-[9px] text-[#800020] font-extrabold uppercase">
                             {staff.role}
                           </div>
                         </div>
@@ -284,7 +282,7 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
                         type="button"
                         onClick={(e) => handleStartEdit(staff, e)}
                         title={`Edit nama & kata sandi ${staff.name}`}
-                        className="p-1 rounded-lg text-slate-400 hover:text-[#F43F5E] hover:bg-pink-100 transition-colors opacity-70 group-hover:opacity-100 shrink-0 ml-1 cursor-pointer"
+                        className="p-1 rounded-lg text-stone-400 hover:text-[#800020] hover:bg-[#FCE8EB] transition-colors opacity-70 group-hover:opacity-100 shrink-0 ml-1 cursor-pointer"
                       >
                         <Pencil className="w-3 h-3" />
                       </button>
@@ -296,14 +294,14 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
 
             {/* Input Kata Sandi via Keyboard Laptop */}
             <form onSubmit={handleSubmit} className="space-y-3 pt-1">
-              <div className="p-3.5 rounded-2xl bg-pink-50/40 border border-pink-100 space-y-2">
+              <div className="p-3.5 rounded-2xl bg-[#FFF5F7] border border-[#FCE4E8] space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                    <KeyRound className="w-3.5 h-3.5 text-[#F43F5E]" />
+                  <label className="text-xs font-bold text-black flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-[#800020]" />
                     <span>Kata Sandi:</span>
-                    <span className="text-[#F43F5E] font-extrabold">{selectedStaff.name}</span>
+                    <span className="text-[#800020] font-black">{selectedStaff.name}</span>
                   </label>
-                  <span className="text-[10px] text-slate-400 font-mono">
+                  <span className="text-[10px] text-stone-600 font-mono font-medium">
                     (Keyboard laptop siap)
                   </span>
                 </div>
@@ -318,7 +316,7 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
                       if (errorMsg) setErrorMsg('');
                     }}
                     placeholder={`Masukkan kata sandi...`}
-                    className="w-full pl-3.5 pr-20 py-2.5 text-sm rounded-xl border border-pink-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#F43F5E] font-mono tracking-wider shadow-inner"
+                    className="w-full pl-3.5 pr-20 py-2.5 text-sm rounded-xl border border-[#FCE4E8] bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#800020] font-mono tracking-wider shadow-inner"
                     autoComplete="current-password"
                   />
 
@@ -330,7 +328,7 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
                           setPassword('');
                           inputRef.current?.focus();
                         }}
-                        className="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+                        className="p-1 text-stone-400 hover:text-black rounded-lg cursor-pointer"
                         title="Hapus input"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -339,7 +337,7 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="p-1 text-slate-400 hover:text-[#F43F5E] rounded-lg cursor-pointer"
+                      className="p-1 text-stone-400 hover:text-[#800020] rounded-lg cursor-pointer"
                       title={showPassword ? 'Sembunyikan' : 'Tampilkan sandi'}
                     >
                       {showPassword ? (
@@ -353,13 +351,13 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
 
                 {/* Error message with auto-clear notice */}
                 {errorMsg ? (
-                  <div className="flex items-center gap-1.5 text-xs text-rose-600 font-semibold animate-pulse">
+                  <div className="flex items-center gap-1.5 text-xs text-[#800020] font-bold animate-pulse">
                     <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                     <span>{errorMsg}</span>
                   </div>
                 ) : (
-                  <div className="text-[10px] text-slate-400">
-                    💡 Petunjuk: Ketik langsung di keyboard laptop lalu tekan <kbd className="px-1 py-0.5 bg-white border border-pink-200 rounded text-[9px] font-mono font-bold text-slate-700">Enter</kbd>.
+                  <div className="text-[10px] text-stone-600 font-medium">
+                    💡 Petunjuk: Ketik langsung di keyboard laptop lalu tekan <kbd className="px-1 py-0.5 bg-white border border-[#FCE4E8] rounded text-[9px] font-mono font-bold text-black">Enter</kbd>.
                   </div>
                 )}
               </div>
@@ -369,13 +367,13 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                  className="px-4 py-2.5 text-xs font-bold text-black bg-[#FCE8EB] hover:bg-[#F8CCD4] rounded-xl transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 text-xs font-bold text-white bg-[#F43F5E] hover:bg-[#E11D48] rounded-xl transition-all shadow-md shadow-pink-500/20 hover:shadow-lg hover:shadow-pink-500/30 flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                  className="flex-1 py-2.5 text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-xl transition-all shadow-md shadow-rose-950/20 flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
                 >
                   <span>Masuk ke Mode Kasir POS</span>
                   <ArrowRight className="w-4 h-4" />

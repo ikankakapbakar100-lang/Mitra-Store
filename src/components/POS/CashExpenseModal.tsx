@@ -201,45 +201,45 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
   const chosenProduct = products.find(p => p.id === selectedProductId);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-3 sm:p-4 animate-in fade-in duration-150">
-      <div className="bg-white rounded-3xl shadow-2xl border border-pink-100 max-w-lg w-full p-4 sm:p-6 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-150">
+      <div className="bg-white rounded-3xl shadow-2xl border border-[#FCE4E8] max-w-lg w-full p-4 sm:p-6 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto text-black">
         
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-pink-100">
+        <div className="flex items-center justify-between pb-3 border-b border-[#FCE4E8]">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-rose-50 text-[#F43F5E] flex items-center justify-center border border-rose-100 shadow-2xs">
+            <div className="w-10 h-10 rounded-2xl bg-[#FCE8EB] text-[#800020] flex items-center justify-center border border-[#F8CCD4] shadow-2xs">
               <ArrowDownCircle className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-slate-900 leading-tight">
+              <h3 className="font-black text-base text-black leading-tight">
                 Catat Kas Keluar / Pengeluaran
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-stone-600 font-medium">
                 Pengambilan kas laci untuk pembelian stok barang atau operasional
               </p>
             </div>
           </div>
           <button 
             onClick={onClose} 
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-1.5 rounded-full text-stone-500 hover:text-black hover:bg-[#FCE8EB] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Info Banner: Kasir & Saldo Kas Laci Saat Ini */}
-        <div className="mt-3 p-3 rounded-2xl bg-gradient-to-r from-pink-50/70 to-rose-50/40 border border-pink-100 flex items-center justify-between text-xs">
+        <div className="mt-3 p-3 rounded-2xl bg-[#FFF5F7] border border-[#FCE4E8] flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
-            <Wallet className="w-4 h-4 text-[#F43F5E]" />
+            <Wallet className="w-4 h-4 text-[#800020]" />
             <div>
-              <span className="text-slate-500 text-[11px] block">Kasir Bertugas:</span>
-              <strong className="text-slate-800">{currentUser.name}</strong>
+              <span className="text-stone-600 text-[11px] block font-medium">Kasir Bertugas:</span>
+              <strong className="text-black font-extrabold">{currentUser.name}</strong>
             </div>
           </div>
           {currentShift?.isOpen && (
             <div className="text-right">
-              <span className="text-slate-500 text-[11px] block">Kas Laci Saat Ini:</span>
-              <span className="font-mono font-black text-[#F43F5E]">
+              <span className="text-stone-600 text-[11px] block font-medium">Kas Laci Saat Ini:</span>
+              <span className="font-mono font-black text-[#800020]">
                 {formatRupiah(currentDrawerCash)}
               </span>
             </div>
@@ -250,7 +250,7 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
           
           {/* Pilihan Kategori Pengeluaran */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+            <label className="block text-xs font-bold text-black mb-1.5">
               Kategori Pengeluaran:
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -267,15 +267,15 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
                     }}
                     className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                       isSelected
-                        ? 'border-[#F43F5E] bg-rose-50/60 text-[#F43F5E] ring-2 ring-[#F43F5E]/20 shadow-2xs'
-                        : 'border-pink-100 bg-white text-slate-700 hover:border-pink-200 hover:bg-pink-50/30'
+                        ? 'border-[#800020] bg-[#FCE8EB] text-[#800020] ring-2 ring-[#800020]/20 shadow-2xs'
+                        : 'border-[#FCE4E8] bg-white text-black hover:border-[#F8CCD4] hover:bg-[#FFF5F7]'
                     }`}
                   >
                     <div className="flex items-center gap-1.5 mb-1">
-                      <Icon className="w-4 h-4 shrink-0 text-[#F43F5E]" />
+                      <Icon className="w-4 h-4 shrink-0 text-[#800020]" />
                       <span className="font-bold text-xs truncate">{opt.label}</span>
                     </div>
-                    <span className="text-[10px] text-slate-400 leading-tight line-clamp-2">
+                    <span className="text-[10px] text-stone-600 leading-tight line-clamp-2 font-medium">
                       {opt.desc}
                     </span>
                   </button>
@@ -286,12 +286,12 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
 
           {/* FITUR KHUSUS: Pilih Produk untuk Tambah Stok Otomatis saat Kategori Pembelian Stok */}
           {category === 'pembelian_stok' && (
-            <div className="p-3 rounded-2xl bg-rose-50/40 border border-rose-200/80 space-y-2.5">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800">
-                <PlusCircle className="w-4 h-4 text-[#F43F5E]" />
+            <div className="p-3 rounded-2xl bg-[#FFF5F7] border border-[#F8CCD4] space-y-2.5">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#800020]">
+                <PlusCircle className="w-4 h-4 text-[#800020]" />
                 <span>Tambah Stok Produk Otomatis (Opsional)</span>
               </div>
-              <p className="text-[11px] text-slate-500 leading-tight">
+              <p className="text-[11px] text-stone-600 font-medium leading-tight">
                 Pilih barang yang dibeli dari supplier untuk menambah stok toko secara langsung.
               </p>
 
@@ -300,7 +300,7 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
                   <select
                     value={selectedProductId}
                     onChange={(e) => handleSelectProduct(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-pink-200 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#F43F5E]"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black focus:outline-none focus:ring-1 focus:ring-[#800020]"
                   >
                     <option value="">-- Pilih Produk Yang Dibeli --</option>
                     {products.map((p) => (
@@ -313,7 +313,7 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
 
                 <div>
                   <div className="flex items-center gap-1">
-                    <span className="text-[11px] text-slate-500 shrink-0 font-medium">+Qty:</span>
+                    <span className="text-[11px] text-stone-600 shrink-0 font-bold">+Qty:</span>
                     <input
                       type="number"
                       min="1"
@@ -322,19 +322,19 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
                       value={stockAddedQty || ''}
                       onChange={(e) => setStockAddedQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
                       placeholder="Qty"
-                      className="w-full px-2 py-1.5 text-xs rounded-xl border border-pink-200 bg-white text-slate-800 font-mono focus:outline-none focus:ring-1 focus:ring-[#F43F5E] disabled:bg-slate-100"
+                      className="w-full px-2 py-1.5 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black font-mono focus:outline-none focus:ring-1 focus:ring-[#800020] disabled:bg-stone-100"
                     />
                   </div>
                 </div>
               </div>
 
               {chosenProduct && (
-                <div className="text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-200 flex items-center justify-between">
+                <div className="text-[11px] text-emerald-800 bg-emerald-100 px-2.5 py-1.5 rounded-xl border border-emerald-300 flex items-center justify-between">
                   <span>
                     Stok saat ini: <strong>{chosenProduct.stock} {chosenProduct.unit}</strong>
                   </span>
                   <span>
-                    Setelah restock: <strong className="font-bold text-emerald-800">{chosenProduct.stock + (stockAddedQty || 0)} {chosenProduct.unit}</strong>
+                    Setelah restock: <strong className="font-bold text-emerald-900">{chosenProduct.stock + (stockAddedQty || 0)} {chosenProduct.unit}</strong>
                   </span>
                 </div>
               )}
@@ -344,19 +344,19 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
           {/* Nominal Pengeluaran */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-bold text-slate-700">
+              <label className="block text-xs font-bold text-black">
                 Nominal Uang Kas Dikeluarkan (Rp):
               </label>
               {currentShift?.isOpen && numericAmount > 0 && (
                 <span className={`text-[11px] font-semibold ${
-                  projectedRemainingCash < 0 ? 'text-rose-600 font-bold' : 'text-slate-500'
+                  projectedRemainingCash < 0 ? 'text-[#800020] font-bold' : 'text-stone-600'
                 }`}>
                   Sisa kas: {formatRupiah(projectedRemainingCash)}
                 </span>
               )}
             </div>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-[#F43F5E]">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-[#800020]">
                 Rp
               </span>
               <input
@@ -368,7 +368,7 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
                   setErrorMessage('');
                 }}
                 placeholder="0"
-                className="w-full pl-10 pr-4 py-2 text-base font-black font-mono rounded-xl border border-pink-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#F43F5E]"
+                className="w-full pl-10 pr-4 py-2 text-base font-black font-mono rounded-xl border border-[#FCE4E8] bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#800020]"
                 autoFocus
                 required
               />
@@ -381,7 +381,7 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
                   type="button"
                   key={amt}
                   onClick={() => handleQuickAmount(amt)}
-                  className="px-2.5 py-1 text-xs font-semibold font-mono rounded-xl bg-pink-50/70 hover:bg-pink-100 border border-pink-100 text-slate-700 cursor-pointer transition-colors"
+                  className="px-2.5 py-1 text-xs font-bold font-mono rounded-xl bg-[#FFF5F7] hover:bg-[#FCE8EB] border border-[#FCE4E8] text-black cursor-pointer transition-colors"
                 >
                   {formatRupiah(amt)}
                 </button>
@@ -391,7 +391,7 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
 
           {/* Keterangan Detail */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
+            <label className="block text-xs font-bold text-black mb-1">
               Keterangan / Rincian Pengeluaran:
             </label>
             <textarea
@@ -402,21 +402,21 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
                 setErrorMessage('');
               }}
               placeholder="Contoh: Beli 2 pcs Cetakan Pukis 10 Lubang Teflon dari Supplier Pak Joko"
-              className="w-full px-3 py-2 text-xs rounded-xl border border-pink-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#F43F5E] resize-none"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#800020] resize-none"
               required
             />
             
             {/* Quick Note Suggestions */}
             <div className="mt-1.5 flex flex-wrap gap-1">
-              <span className="text-[10px] text-slate-400 flex items-center gap-0.5 mr-1">
-                <Sparkles className="w-3 h-3 text-pink-400" /> Contoh:
+              <span className="text-[10px] text-stone-500 font-bold flex items-center gap-0.5 mr-1">
+                <Sparkles className="w-3 h-3 text-[#800020]" /> Contoh:
               </span>
               {quickSuggestions[category]?.map((sug, i) => (
                 <button
                   type="button"
                   key={i}
                   onClick={() => setNotes(sug)}
-                  className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-pink-50 text-slate-600 hover:text-[#F43F5E] transition-colors border border-slate-200/60"
+                  className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FFF5F7] hover:bg-[#FCE8EB] text-black hover:text-[#800020] transition-colors border border-[#FCE4E8]"
                 >
                   {sug}
                 </button>
@@ -426,7 +426,7 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
 
           {/* Error Message Banner */}
           {errorMessage && (
-            <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold flex items-center gap-2">
+            <div className="p-2.5 rounded-xl bg-[#FCE8EB] border border-[#F8CCD4] text-[#800020] text-xs font-bold flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
@@ -434,7 +434,7 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
 
           {/* Warning if amount exceeds drawer cash */}
           {currentShift?.isOpen && projectedRemainingCash < 0 && (
-            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
+            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
               <span>Perhatian: Nominal pengeluaran melebihi estimasi kas laci saat ini.</span>
             </div>
@@ -445,13 +445,13 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+              className="flex-1 py-2.5 text-xs font-bold text-black bg-[#FCE8EB] hover:bg-[#F8CCD4] rounded-xl transition-colors cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 text-xs font-bold text-white bg-[#F43F5E] hover:bg-[#E11D48] rounded-xl transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              className="flex-1 py-2.5 text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-xl transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Simpan Kas Keluar</span>

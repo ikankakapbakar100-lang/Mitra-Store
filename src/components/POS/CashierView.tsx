@@ -135,31 +135,31 @@ export const CashierView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-2.5 sm:py-5">
+    <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-2.5 sm:py-5 text-black">
       <div className={`grid grid-cols-1 ${isCartOpen ? 'lg:grid-cols-12' : 'grid-cols-1'} gap-3 sm:gap-5 items-start`}>
         
-        {/* Kolom Katalog Produk: Melebar Penuh (100%) Saat Keranjang Ditutup untuk Menghemat Space */}
+        {/* Kolom Katalog Produk */}
         <div className={`${isCartOpen ? 'lg:col-span-7 xl:col-span-8' : 'w-full'} space-y-2 sm:space-y-3.5`}>
           
-          {/* Top Bar: Search, Kamera Barcode, Toggle Density HP (10+ Produk), & Icon Keranjang */}
+          {/* Top Bar: Search, Kamera Barcode, Toggle Density HP, & Icon Keranjang */}
           <div className="space-y-2">
             <div className="flex gap-1.5 sm:gap-2 items-center">
               
               {/* Search Bar Minimalis */}
               <div className="relative flex-1">
-                <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-500" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
                   placeholder="Cari cetakan, loyang, alat masak, barcode..."
-                  className="w-full pl-8 sm:pl-9 pr-7 sm:pr-8 py-1.5 sm:py-2 text-xs rounded-xl sm:rounded-2xl border border-pink-100 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#F43F5E] shadow-2xs"
+                  className="w-full pl-8 sm:pl-9 pr-7 sm:pr-8 py-1.5 sm:py-2 text-xs rounded-xl sm:rounded-2xl border border-[#FCE4E8] bg-white text-black placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-[#800020] shadow-2xs font-medium"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-black cursor-pointer"
                   >
                     ×
                   </button>
@@ -169,7 +169,7 @@ export const CashierView: React.FC = () => {
               {/* Kamera Barcode Scanner Trigger */}
               <button
                 onClick={() => setIsCameraScannerOpen(true)}
-                className="p-1.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-2xl font-bold text-xs bg-pink-50 text-[#F43F5E] border border-pink-200 hover:bg-pink-100 transition-all flex items-center gap-1.5 shadow-2xs shrink-0 cursor-pointer"
+                className="p-1.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-2xl font-bold text-xs bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4] hover:bg-[#F8CCD4] transition-all flex items-center gap-1.5 shadow-2xs shrink-0 cursor-pointer"
                 title="Buka Kamera Barcode"
               >
                 <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -179,13 +179,13 @@ export const CashierView: React.FC = () => {
               {/* Tombol Catat Kas Keluar / Pengeluaran (Beli Stok / Operasional) */}
               <button
                 onClick={() => setIsExpenseModalOpen(true)}
-                className="p-1.5 sm:px-2.5 sm:py-2 rounded-xl sm:rounded-2xl font-bold text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all flex items-center gap-1.5 shadow-2xs shrink-0 cursor-pointer"
+                className="p-1.5 sm:px-2.5 sm:py-2 rounded-xl sm:rounded-2xl font-bold text-xs bg-[#FCE8EB] hover:bg-[#F8CCD4] text-[#800020] border border-[#F8CCD4] transition-all flex items-center gap-1.5 shadow-2xs shrink-0 cursor-pointer"
                 title="Catat Kas Keluar (Beli Stok / Operasional Toko)"
               >
-                <ArrowDownCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#F43F5E]" />
+                <ArrowDownCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#800020]" />
                 <span className="hidden sm:inline">Kas Keluar</span>
                 {todayExpenseTotal > 0 && (
-                  <span className="text-[10px] bg-rose-200/70 text-rose-800 font-mono font-bold px-1.5 py-0.2 rounded-full hidden md:inline">
+                  <span className="text-[10px] bg-[#800020] text-white font-mono font-bold px-1.5 py-0.2 rounded-full hidden md:inline">
                     -{formatRupiah(todayExpenseTotal)}
                   </span>
                 )}
@@ -196,8 +196,8 @@ export const CashierView: React.FC = () => {
                 onClick={() => setViewDensity(viewDensity === 'compact' ? 'grid' : 'compact')}
                 className={`p-1.5 sm:px-2.5 sm:py-2 rounded-xl sm:rounded-2xl font-bold text-xs border transition-all flex items-center gap-1 shrink-0 cursor-pointer ${
                   viewDensity === 'compact'
-                    ? 'bg-rose-50 text-[#F43F5E] border-rose-200'
-                    : 'bg-white text-slate-600 border-pink-100 hover:bg-pink-50'
+                    ? 'bg-[#FCE8EB] text-[#800020] border-[#F8CCD4]'
+                    : 'bg-white text-black border-[#FCE4E8] hover:bg-[#FCE8EB]'
                 }`}
                 title={viewDensity === 'compact' ? 'Mode Kompak HP (Muat 10+ Produk Sekaligus Tanpa Scroll)' : 'Mode Grid Mini'}
               >
@@ -214,20 +214,20 @@ export const CashierView: React.FC = () => {
                 )}
               </button>
 
-              {/* FITUR KHUSUS ICON KERANJANG (HEMAT SPACE UNTUK IMAGE PRODUK) */}
+              {/* FITUR KHUSUS ICON KERANJANG */}
               <button
                 onClick={() => setIsCartOpen(!isCartOpen)}
                 className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl font-bold text-xs transition-all flex items-center gap-1.5 sm:gap-2 shadow-sm cursor-pointer shrink-0 ${
                   isCartOpen
-                    ? 'bg-slate-900 text-white hover:bg-slate-800'
-                    : 'bg-[#F43F5E] hover:bg-[#E11D48] text-white shadow-pink-500/20 active:scale-95'
+                    ? 'bg-black text-white hover:bg-stone-900'
+                    : 'bg-[#800020] hover:bg-[#660019] text-white shadow-rose-950/20 active:scale-95'
                 }`}
                 title={isCartOpen ? 'Tutup Keranjang (Perluas Tampilan Produk)' : 'Buka Keranjang Kasir'}
               >
                 <div className="relative">
                   <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   {totalCartCount > 0 && (
-                    <span className="absolute -top-1.5 -right-2 min-w-3.5 h-3.5 px-0.5 bg-white text-[#F43F5E] rounded-full text-[8px] sm:text-[9px] font-black flex items-center justify-center shadow-xs">
+                    <span className="absolute -top-1.5 -right-2 min-w-3.5 h-3.5 px-0.5 bg-white text-[#800020] rounded-full text-[8px] sm:text-[9px] font-black flex items-center justify-center shadow-xs">
                       {totalCartCount > 99 ? '99+' : totalCartCount}
                     </span>
                   )}
@@ -246,8 +246,8 @@ export const CashierView: React.FC = () => {
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-2.5 py-1 text-[11px] sm:text-xs font-semibold rounded-lg sm:rounded-xl whitespace-nowrap transition-all cursor-pointer ${
                     selectedCategory === cat
-                      ? 'bg-[#F43F5E] text-white shadow-2xs font-bold'
-                      : 'bg-white text-slate-600 hover:bg-pink-50/70 border border-pink-100'
+                      ? 'bg-[#800020] text-white shadow-2xs font-bold'
+                      : 'bg-white text-black hover:bg-[#FCE8EB] border border-[#FCE4E8]'
                   }`}
                 >
                   {cat}
@@ -256,19 +256,19 @@ export const CashierView: React.FC = () => {
             </div>
           </div>
 
-          {/* Grid / List Produk: Desain Image Terkompresi & Hemat Space (10+ Produk Terlihat di HP Tanpa Scroll) */}
+          {/* Grid / List Produk */}
           {filteredProducts.length === 0 ? (
-            <div className="bg-white rounded-2xl sm:rounded-3xl border border-pink-100 p-8 text-center">
-              <Search className="w-7 h-7 text-slate-300 mx-auto mb-2 opacity-50" />
-              <h4 className="text-xs sm:text-sm font-bold text-slate-800">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#FCE4E8] p-8 text-center">
+              <Search className="w-7 h-7 text-stone-400 mx-auto mb-2 opacity-50" />
+              <h4 className="text-xs sm:text-sm font-bold text-black">
                 Produk Tidak Ditemukan
               </h4>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <p className="text-[11px] text-stone-600 mt-0.5">
                 Ubah kata kunci pencarian atau pilih kategori lain.
               </p>
             </div>
           ) : viewDensity === 'compact' ? (
-            /* MODE 1 (DEFAULT HP): Ultra-Kompak 2 Kolom, Image 38-42px Terkompresi, Muat 10-14 Produk Langsung di HP Tanpa Scroll */
+            /* MODE 1 (DEFAULT HP): Ultra-Kompak */
             <div className={`grid gap-1.5 sm:gap-2 ${
               isCartOpen
                 ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4'
@@ -284,13 +284,13 @@ export const CashierView: React.FC = () => {
                     disabled={isOutOfStock}
                     className={`rounded-xl border text-left p-1.5 sm:p-2 transition-all flex items-center gap-1.5 sm:gap-2 group cursor-pointer h-[50px] sm:h-[56px] ${
                       isOutOfStock
-                        ? 'opacity-50 cursor-not-allowed bg-slate-50 border-slate-200'
-                        : 'bg-white border-pink-100 hover:border-[#F43F5E] hover:shadow-xs active:scale-[0.98]'
+                        ? 'opacity-50 cursor-not-allowed bg-stone-100 border-stone-200'
+                        : 'bg-white border-[#FCE4E8] hover:border-[#800020] hover:shadow-xs active:scale-[0.98]'
                     }`}
                   >
-                    {/* Visual Foto Produk: Terkompresi Mini (38x38 di HP, 44x44 di desktop) */}
-                    <div className="relative w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-pink-50/50 overflow-hidden shrink-0 border border-pink-100/60 flex items-center justify-center">
-                      <Package className="w-4 h-4 text-pink-300 absolute pointer-events-none" />
+                    {/* Visual Foto Produk */}
+                    <div className="relative w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-[#FFF5F5] overflow-hidden shrink-0 border border-[#FCE4E8] flex items-center justify-center">
+                      <Package className="w-4 h-4 text-[#F8CCD4] absolute pointer-events-none" />
                       <img
                         src={getOptimizedThumb(product.imageUrl)}
                         alt={product.name}
@@ -304,26 +304,26 @@ export const CashierView: React.FC = () => {
                       
                       {/* Shopee Sync Dot Indicator */}
                       {product.shopeeSyncEnabled && (
-                        <div className="absolute top-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-[#F43F5E]" title="Shopee Sync" />
+                        <div className="absolute top-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-[#800020]" title="Shopee Sync" />
                       )}
                     </div>
 
                     {/* Info Produk Ringkas: Nama & Harga */}
                     <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-0.5">
                       <div className="flex items-center justify-between gap-1">
-                        <h3 className="text-[11px] sm:text-xs font-bold text-slate-800 truncate leading-tight group-hover:text-[#F43F5E] transition-colors">
+                        <h3 className="text-[11px] sm:text-xs font-extrabold text-black truncate leading-tight group-hover:text-[#800020] transition-colors">
                           {product.name}
                         </h3>
-                        <span className="text-[9px] font-mono text-slate-400 shrink-0">
+                        <span className="text-[9px] font-mono text-stone-600 font-bold shrink-0">
                           {isOutOfStock ? '0' : product.stock}
                         </span>
                       </div>
 
                       <div className="flex items-center justify-between gap-1">
-                        <span className="text-[10.5px] sm:text-xs font-black font-mono text-[#F43F5E] leading-none">
+                        <span className="text-[10.5px] sm:text-xs font-black font-mono text-[#800020] leading-none">
                           {formatRupiah(product.sellPrice)}
                         </span>
-                        <div className="w-4 h-4 rounded bg-pink-50 group-hover:bg-[#F43F5E] group-hover:text-white text-[#F43F5E] flex items-center justify-center shrink-0 transition-colors">
+                        <div className="w-4 h-4 rounded bg-[#FCE8EB] group-hover:bg-[#800020] group-hover:text-white text-[#800020] flex items-center justify-center shrink-0 transition-colors">
                           <Plus className="w-2.5 h-2.5" />
                         </div>
                       </div>
@@ -333,7 +333,7 @@ export const CashierView: React.FC = () => {
               })}
             </div>
           ) : (
-            /* MODE 2: Grid Mini dengan Gambar Kompresi Rendah Space (h-14 sm:h-16) */
+            /* MODE 2: Grid Mini */
             <div className={`grid gap-1.5 sm:gap-2.5 ${
               isCartOpen
                 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5'
@@ -349,13 +349,12 @@ export const CashierView: React.FC = () => {
                     disabled={isOutOfStock}
                     className={`rounded-xl border text-left transition-all overflow-hidden flex flex-col justify-between group cursor-pointer ${
                       isOutOfStock
-                        ? 'opacity-60 cursor-not-allowed bg-slate-50 border-slate-200'
-                        : 'bg-white border-pink-100/80 hover:border-[#F43F5E] hover:shadow-xs active:scale-[0.98]'
+                        ? 'opacity-60 cursor-not-allowed bg-stone-100 border-stone-200'
+                        : 'bg-white border-[#FCE4E8] hover:border-[#800020] hover:shadow-xs active:scale-[0.98]'
                     }`}
                   >
-                    {/* Visual Foto Mini Terkompresi (h-14 sm:h-16) */}
-                    <div className="relative w-full h-14 sm:h-16 bg-pink-50/40 overflow-hidden shrink-0 flex items-center justify-center">
-                      <Package className="w-5 h-5 text-pink-300 absolute pointer-events-none" />
+                    <div className="relative w-full h-14 sm:h-16 bg-[#FFF5F5] overflow-hidden shrink-0 flex items-center justify-center">
+                      <Package className="w-5 h-5 text-[#F8CCD4] absolute pointer-events-none" />
                       <img
                         src={getOptimizedThumb(product.imageUrl)}
                         alt={product.name}
@@ -369,28 +368,28 @@ export const CashierView: React.FC = () => {
                       
                       {/* Shopee Sync Badge */}
                       {product.shopeeSyncEnabled && (
-                        <div className="absolute top-1 left-1 px-1 py-0.2 rounded bg-white/90 backdrop-blur-xs text-[7px] font-bold text-[#F43F5E] border border-pink-200">
+                        <div className="absolute top-1 left-1 px-1 py-0.2 rounded bg-white/90 backdrop-blur-xs text-[7px] font-bold text-[#800020] border border-[#F8CCD4]">
                           Shopee
                         </div>
                       )}
 
                       {/* Stock Pill Minimalis */}
-                      <div className="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-black/60 backdrop-blur-xs text-[8px] font-mono text-white">
+                      <div className="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-black/75 backdrop-blur-xs text-[8px] font-mono text-white">
                         {isOutOfStock ? 'Habis' : `${product.stock} ${product.unit}`}
                       </div>
                     </div>
 
-                    {/* Info Produk Ringkas: Nama & Harga */}
+                    {/* Info Produk Ringkas */}
                     <div className="p-1.5 flex-1 flex flex-col justify-between">
-                      <h3 className="text-[11px] font-bold text-slate-800 line-clamp-1 leading-tight group-hover:text-[#F43F5E] transition-colors">
+                      <h3 className="text-[11px] font-extrabold text-black line-clamp-1 leading-tight group-hover:text-[#800020] transition-colors">
                         {product.name}
                       </h3>
 
-                      <div className="mt-1 pt-1 border-t border-pink-50 flex items-center justify-between">
-                        <span className="text-[10.5px] font-black font-mono text-[#F43F5E]">
+                      <div className="mt-1 pt-1 border-t border-[#FCE4E8] flex items-center justify-between">
+                        <span className="text-[10.5px] font-black font-mono text-[#800020]">
                           {formatRupiah(product.sellPrice)}
                         </span>
-                        <div className="w-4 h-4 rounded-md bg-pink-50 group-hover:bg-[#F43F5E] group-hover:text-white text-[#F43F5E] flex items-center justify-center transition-colors">
+                        <div className="w-4 h-4 rounded-md bg-[#FCE8EB] group-hover:bg-[#800020] group-hover:text-white text-[#800020] flex items-center justify-center transition-colors">
                           <Plus className="w-2.5 h-2.5" />
                         </div>
                       </div>
@@ -402,22 +401,22 @@ export const CashierView: React.FC = () => {
           )}
         </div>
 
-        {/* Kolom Keranjang Kasir: Muncul Saat Dibuka via Icon Keranjang */}
+        {/* Kolom Keranjang Kasir */}
         {isCartOpen && (
           <div className="lg:col-span-5 xl:col-span-4 sticky top-20 animate-in fade-in zoom-in-95 duration-150">
-            <div className="bg-white rounded-3xl border border-pink-100 shadow-xl overflow-hidden flex flex-col">
+            <div className="bg-white rounded-3xl border border-[#FCE4E8] shadow-xl overflow-hidden flex flex-col">
               
               {/* Header Keranjang dengan Tombol Tutup (X) */}
-              <div className="px-4 py-3 border-b border-pink-100 flex items-center justify-between bg-pink-50/40">
+              <div className="px-4 py-3 border-b border-[#FCE4E8] flex items-center justify-between bg-[#FFF5F5]">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-xl bg-[#F43F5E] text-white flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-xl bg-[#800020] text-white flex items-center justify-center">
                     <ShoppingCart className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <h3 className="text-xs font-black text-slate-900 leading-tight">
+                    <h3 className="text-xs font-black text-black leading-tight">
                       Keranjang Kasir
                     </h3>
-                    <span className="text-[10px] font-mono text-slate-400">
+                    <span className="text-[10px] font-mono text-stone-600">
                       {totalCartCount} item pesanan
                     </span>
                   </div>
@@ -426,16 +425,16 @@ export const CashierView: React.FC = () => {
                 <div className="flex items-center gap-1.5">
                   {cart.length > 0 && (
                     isConfirmingClearCart ? (
-                      <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-rose-200">
+                      <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-rose-300">
                         <button
                           onClick={handleClearCart}
-                          className="px-2 py-0.5 text-[10px] font-bold bg-rose-600 text-white rounded-lg hover:bg-rose-700"
+                          className="px-2 py-0.5 text-[10px] font-bold bg-[#800020] text-white rounded-lg hover:bg-[#660019] cursor-pointer"
                         >
                           Ya, Kosongkan
                         </button>
                         <button
                           onClick={() => setIsConfirmingClearCart(false)}
-                          className="px-1.5 py-0.5 text-[10px] text-slate-500 hover:text-slate-800"
+                          className="px-1.5 py-0.5 text-[10px] text-stone-600 hover:text-black cursor-pointer"
                         >
                           Batal
                         </button>
@@ -443,7 +442,7 @@ export const CashierView: React.FC = () => {
                     ) : (
                       <button
                         onClick={() => setIsConfirmingClearCart(true)}
-                        className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-xl text-stone-600 hover:text-[#800020] hover:bg-[#FCE8EB] transition-colors cursor-pointer"
                         title="Kosongkan Keranjang"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -454,7 +453,7 @@ export const CashierView: React.FC = () => {
                   {/* Tombol Tutup Keranjang */}
                   <button
                     onClick={() => setIsCartOpen(false)}
-                    className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-pink-100 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-xl text-stone-600 hover:text-black hover:bg-[#FCE8EB] transition-colors cursor-pointer"
                     title="Tutup Keranjang"
                   >
                     <X className="w-4 h-4" />
@@ -463,20 +462,20 @@ export const CashierView: React.FC = () => {
               </div>
 
               {/* Status Aman Data Otomatis */}
-              <div className="px-3.5 py-1.5 bg-emerald-50/70 border-b border-emerald-100/60 flex items-center justify-between text-[10px] text-emerald-800">
+              <div className="px-3.5 py-1.5 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between text-[10px] text-emerald-900">
                 <div className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
-                  <span className="font-semibold">Tersimpan Otomatis</span>
+                  <ShieldCheck className="w-3 h-3 text-emerald-700 shrink-0" />
+                  <span className="font-bold">Tersimpan Otomatis</span>
                 </div>
-                <span className="font-mono text-slate-500 text-[10px]">
+                <span className="font-mono text-stone-600 text-[10px] font-semibold">
                   Kasir: {currentUser.name.split(' ')[0]}
                 </span>
               </div>
 
               {/* Pelanggan / Member CRM */}
-              <div className="p-3 border-b border-pink-100 bg-pink-50/20">
+              <div className="p-3 border-b border-[#FCE4E8] bg-[#FFF8F8]">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-600">
+                  <span className="text-xs font-bold text-black">
                     Pelanggan:
                   </span>
                   {selectedCustomer ? (
@@ -485,14 +484,14 @@ export const CashierView: React.FC = () => {
                         setSelectedCustomer(null);
                         setPointsToRedeem(0);
                       }}
-                      className="text-[11px] text-slate-400 hover:text-[#F43F5E] cursor-pointer"
+                      className="text-[11px] text-stone-600 hover:text-[#800020] font-semibold cursor-pointer"
                     >
                       Ganti
                     </button>
                   ) : (
                     <button
                       onClick={() => setIsCustomerDropdownOpen(!isCustomerDropdownOpen)}
-                      className="text-xs text-[#F43F5E] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                      className="text-xs text-[#800020] font-bold hover:underline flex items-center gap-1 cursor-pointer"
                     >
                       <UserPlus className="w-3.5 h-3.5" />
                       Pilih Member
@@ -501,16 +500,16 @@ export const CashierView: React.FC = () => {
                 </div>
 
                 {selectedCustomer ? (
-                  <div className="mt-2 p-2 bg-white rounded-xl border border-pink-200 flex items-center justify-between">
+                  <div className="mt-2 p-2 bg-white rounded-xl border border-[#FCE4E8] flex items-center justify-between">
                     <div>
-                      <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <div className="text-xs font-bold text-black flex items-center gap-1.5">
                         <span>{selectedCustomer.name}</span>
-                        <span className="text-[9px] uppercase font-mono font-bold px-1.5 py-0.2 rounded bg-pink-100 text-[#F43F5E]">
+                        <span className="text-[9px] uppercase font-mono font-bold px-1.5 py-0.2 rounded bg-[#FCE8EB] text-[#800020]">
                           {selectedCustomer.tier}
                         </span>
                       </div>
-                      <div className="text-[10px] text-slate-400">
-                        Saldo: <strong className="text-[#F43F5E] font-mono">{selectedCustomer.points} Poin</strong>
+                      <div className="text-[10px] text-stone-600">
+                        Saldo: <strong className="text-[#800020] font-mono">{selectedCustomer.points} Poin</strong>
                       </div>
                     </div>
 
@@ -519,7 +518,7 @@ export const CashierView: React.FC = () => {
                         {pointsToRedeem > 0 ? (
                           <button
                             onClick={() => setPointsToRedeem(0)}
-                            className="px-2 py-1 text-[10px] font-semibold bg-rose-50 text-rose-600 rounded-lg cursor-pointer"
+                            className="px-2 py-1 text-[10px] font-bold bg-[#FCE8EB] text-[#800020] rounded-lg cursor-pointer"
                           >
                             Batal Tukar
                           </button>
@@ -532,7 +531,7 @@ export const CashierView: React.FC = () => {
                               );
                               setPointsToRedeem(maxRedeemablePts);
                             }}
-                            className="px-2.5 py-1 text-[10px] font-bold bg-[#F43F5E] text-white rounded-lg hover:bg-[#E11D48] cursor-pointer"
+                            className="px-2.5 py-1 text-[10px] font-bold bg-[#800020] text-white rounded-lg hover:bg-[#660019] cursor-pointer"
                           >
                             Tukar Poin
                           </button>
@@ -541,7 +540,7 @@ export const CashierView: React.FC = () => {
                     )}
                   </div>
                 ) : isCustomerDropdownOpen ? (
-                  <div className="mt-2 space-y-1 max-h-36 overflow-y-auto bg-white p-1.5 rounded-xl border border-pink-100 shadow-md">
+                  <div className="mt-2 space-y-1 max-h-36 overflow-y-auto bg-white p-1.5 rounded-xl border border-[#FCE4E8] shadow-md">
                     {customers.map((c) => (
                       <button
                         key={c.id}
@@ -549,12 +548,12 @@ export const CashierView: React.FC = () => {
                           setSelectedCustomer(c);
                           setIsCustomerDropdownOpen(false);
                         }}
-                        className="w-full text-left p-1.5 rounded-lg hover:bg-pink-50 text-xs flex justify-between items-center cursor-pointer"
+                        className="w-full text-left p-1.5 rounded-lg hover:bg-[#FFF5F5] text-xs flex justify-between items-center cursor-pointer"
                       >
-                        <span className="font-semibold text-slate-800 truncate">
+                        <span className="font-bold text-black truncate">
                           {c.name}
                         </span>
-                        <span className="text-[10px] font-mono text-[#F43F5E]">
+                        <span className="text-[10px] font-mono text-[#800020] font-bold">
                           {c.points} Pts
                         </span>
                       </button>
@@ -564,14 +563,14 @@ export const CashierView: React.FC = () => {
               </div>
 
               {/* Daftar Item Keranjang */}
-              <div className="p-3 max-h-64 overflow-y-auto space-y-2.5 flex-1 divide-y divide-pink-50">
+              <div className="p-3 max-h-64 overflow-y-auto space-y-2.5 flex-1 divide-y divide-[#FCE4E8]">
                 {cart.length === 0 ? (
                   <div className="py-8 text-center">
-                    <ShoppingBag className="w-8 h-8 text-pink-200 mx-auto mb-2" />
-                    <p className="text-xs font-semibold text-slate-500">
+                    <ShoppingBag className="w-8 h-8 text-[#F8CCD4] mx-auto mb-2" />
+                    <p className="text-xs font-bold text-black">
                       Keranjang masih kosong
                     </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+                    <p className="text-[11px] text-stone-600 mt-0.5">
                       Klik produk untuk menambahkan ke keranjang.
                     </p>
                   </div>
@@ -582,14 +581,14 @@ export const CashierView: React.FC = () => {
                         src={item.product.imageUrl || 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=200&q=80'}
                         alt={item.product.name}
                         referrerPolicy="no-referrer"
-                        className="w-9 h-9 rounded-lg object-cover shrink-0 border border-pink-100"
+                        className="w-9 h-9 rounded-lg object-cover shrink-0 border border-[#FCE4E8]"
                       />
 
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-bold text-slate-900 truncate">
+                        <h4 className="text-xs font-bold text-black truncate">
                           {item.product.name}
                         </h4>
-                        <div className="text-[10px] text-[#F43F5E] font-mono font-semibold">
+                        <div className="text-[10px] text-[#800020] font-mono font-bold">
                           {formatRupiah(item.product.sellPrice)}
                         </div>
                       </div>
@@ -597,28 +596,28 @@ export const CashierView: React.FC = () => {
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={() => updateCartQty(item.product.id, item.qty - 1)}
-                          className="w-5 h-5 rounded-md bg-pink-50 hover:bg-pink-100 flex items-center justify-center text-slate-700 cursor-pointer"
+                          className="w-5 h-5 rounded-md bg-[#FCE8EB] hover:bg-[#F8CCD4] flex items-center justify-center text-[#800020] font-bold cursor-pointer"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="w-5 text-center text-xs font-bold font-mono text-slate-900">
+                        <span className="w-5 text-center text-xs font-bold font-mono text-black">
                           {item.qty}
                         </span>
                         <button
                           onClick={() => updateCartQty(item.product.id, item.qty + 1)}
-                          className="w-5 h-5 rounded-md bg-pink-50 hover:bg-pink-100 flex items-center justify-center text-slate-700 cursor-pointer"
+                          className="w-5 h-5 rounded-md bg-[#FCE8EB] hover:bg-[#F8CCD4] flex items-center justify-center text-[#800020] font-bold cursor-pointer"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
 
                       <div className="text-right shrink-0 min-w-[65px]">
-                        <div className="text-xs font-bold text-slate-900 font-mono">
+                        <div className="text-xs font-bold text-black font-mono">
                           {formatRupiah(item.product.sellPrice * item.qty)}
                         </div>
                         <button
                           onClick={() => removeFromCart(item.product.id)}
-                          className="text-[9px] text-[#F43F5E] hover:underline cursor-pointer"
+                          className="text-[9px] text-[#800020] hover:underline font-bold cursor-pointer"
                         >
                           Hapus
                         </button>
@@ -629,55 +628,55 @@ export const CashierView: React.FC = () => {
               </div>
 
               {/* Rincian Total & Tombol Pembayaran */}
-              <div className="p-3.5 bg-pink-50/30 border-t border-pink-100 space-y-1.5">
-                <div className="flex justify-between text-xs text-slate-600">
+              <div className="p-3.5 bg-[#FFF8F8] border-t border-[#FCE4E8] space-y-1.5">
+                <div className="flex justify-between text-xs text-stone-700 font-semibold">
                   <span>Subtotal</span>
-                  <span className="font-mono font-medium">{formatRupiah(cartSubtotal)}</span>
+                  <span className="font-mono font-bold text-black">{formatRupiah(cartSubtotal)}</span>
                 </div>
 
                 {pointsDiscountValue > 0 && (
-                  <div className="flex justify-between text-xs text-[#F43F5E] font-bold">
+                  <div className="flex justify-between text-xs text-[#800020] font-bold">
                     <span>Diskon Poin ({pointsToRedeem} pts)</span>
                     <span className="font-mono">-{formatRupiah(pointsDiscountValue)}</span>
                   </div>
                 )}
 
                 {/* Toggle PPN */}
-                <div className="flex items-center justify-between text-xs text-slate-600 pt-1 border-t border-pink-100/60">
-                  <label className="flex items-center gap-1.5 cursor-pointer">
+                <div className="flex items-center justify-between text-xs text-stone-700 pt-1 border-t border-[#FCE4E8]">
+                  <label className="flex items-center gap-1.5 cursor-pointer font-semibold">
                     <input
                       type="checkbox"
                       checked={taxEnabled}
                       onChange={(e) => setTaxEnabled(e.target.checked)}
-                      className="rounded text-[#F43F5E] focus:ring-[#F43F5E]"
+                      className="rounded accent-[#800020] text-[#800020] focus:ring-[#800020]"
                     />
                     <span>PPN (11%)</span>
                   </label>
-                  <span className="font-mono">{taxEnabled ? formatRupiah(cartTax) : 'Rp 0'}</span>
+                  <span className="font-mono font-bold text-black">{taxEnabled ? formatRupiah(cartTax) : 'Rp 0'}</span>
                 </div>
 
                 {/* Info Kas Keluar / Beli Stok Hari Ini */}
-                <div className="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-pink-100/60">
-                  <div className="flex items-center gap-1 text-[11px]">
-                    <ArrowDownCircle className="w-3 h-3 text-[#F43F5E]" />
+                <div className="flex items-center justify-between text-xs text-stone-700 pt-1 border-t border-[#FCE4E8]">
+                  <div className="flex items-center gap-1 text-[11px] font-semibold">
+                    <ArrowDownCircle className="w-3 h-3 text-[#800020]" />
                     <span>Kas Keluar Toko:</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setIsExpenseModalOpen(true)}
-                    className="text-[11px] font-bold text-[#F43F5E] hover:underline cursor-pointer"
+                    className="text-[11px] font-bold text-[#800020] hover:underline cursor-pointer"
                   >
                     {todayExpenseTotal > 0 ? `-${formatRupiah(todayExpenseTotal)} (+Catat)` : '+ Catat Beli Stok'}
                   </button>
                 </div>
 
-                <div className="pt-2 border-t border-pink-100 flex justify-between items-baseline">
+                <div className="pt-2 border-t border-[#FCE4E8] flex justify-between items-baseline">
                   <div>
-                    <span className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                    <span className="text-xs font-black text-black uppercase tracking-wider">
                       Total Bayar
                     </span>
                   </div>
-                  <div className="text-lg font-black text-[#F43F5E] font-mono">
+                  <div className="text-xl font-black text-[#800020] font-mono">
                     {formatRupiah(cartTotal)}
                   </div>
                 </div>
@@ -688,8 +687,8 @@ export const CashierView: React.FC = () => {
                   onClick={() => setIsPaymentModalOpen(true)}
                   className={`w-full py-3 px-4 rounded-xl text-xs font-bold text-white transition-all flex items-center justify-center gap-2 mt-2 shadow-md ${
                     cart.length === 0
-                      ? 'bg-slate-200 cursor-not-allowed text-slate-400'
-                      : 'bg-[#F43F5E] hover:bg-[#E11D48] active:scale-[0.99] cursor-pointer shadow-pink-500/20'
+                      ? 'bg-stone-300 cursor-not-allowed text-stone-500'
+                      : 'bg-[#800020] hover:bg-[#660019] active:scale-[0.99] cursor-pointer shadow-rose-950/20'
                   }`}
                 >
                   <CreditCard className="w-4 h-4" />
@@ -701,21 +700,21 @@ export const CashierView: React.FC = () => {
         )}
       </div>
 
-      {/* FLOATING ACTION PILL: Muncul saat keranjang ditutup tapi sudah ada produk yang dipilih */}
+      {/* FLOATING ACTION PILL */}
       {!isCartOpen && cart.length > 0 && (
-        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-30 max-w-md w-11/12 bg-slate-900/95 backdrop-blur-md text-white rounded-2xl p-2.5 px-3.5 shadow-2xl flex items-center justify-between border border-pink-500/30 animate-in fade-in slide-in-from-bottom-3 duration-200">
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-30 max-w-md w-11/12 bg-black/95 backdrop-blur-md text-white rounded-2xl p-2.5 px-3.5 shadow-2xl flex items-center justify-between border border-[#800020]/60 animate-in fade-in slide-in-from-bottom-3 duration-200">
           <div 
             onClick={() => setIsCartOpen(true)}
             className="flex items-center gap-2.5 cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-xl bg-[#F43F5E] flex items-center justify-center font-bold text-xs shadow-xs text-white">
+            <div className="w-8 h-8 rounded-xl bg-[#800020] flex items-center justify-center font-bold text-xs shadow-xs text-white">
               <ShoppingCart className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-semibold">
+              <div className="text-xs font-bold">
                 {totalCartCount} Item di Keranjang
               </div>
-              <div className="text-xs font-black font-mono text-pink-300">
+              <div className="text-xs font-black font-mono text-[#FCE8EB]">
                 {formatRupiah(cartTotal)}
               </div>
             </div>
@@ -724,13 +723,13 @@ export const CashierView: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsCartOpen(true)}
-              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
             >
               Buka Keranjang
             </button>
             <button
               onClick={() => setIsPaymentModalOpen(true)}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#F43F5E] hover:bg-[#E11D48] text-white transition-colors shadow-xs cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#800020] hover:bg-[#660019] text-white transition-colors shadow-xs cursor-pointer"
             >
               Bayar
             </button>

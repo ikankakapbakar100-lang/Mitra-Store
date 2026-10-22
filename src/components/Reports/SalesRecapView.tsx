@@ -465,13 +465,13 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = ({ onOpenShiftModal
               onClick={() => setActiveTab('expenses')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === 'expenses'
-                  ? 'bg-white text-[#F43F5E] shadow-xs'
+                  ? 'bg-white text-[#800020] shadow-xs font-bold'
                   : 'text-neutral-500 hover:text-neutral-900'
               }`}
             >
-              <ArrowDownCircle className="w-3.5 h-3.5 text-[#F43F5E]" />
+              <ArrowDownCircle className="w-3.5 h-3.5 text-[#800020]" />
               <span>Pengeluaran &amp; Stok</span>
-              <span className="ml-0.5 text-[10px] bg-rose-100 text-rose-800 font-bold px-1.5 py-0.2 rounded-full">
+              <span className="ml-0.5 text-[10px] bg-[#FCE8EB] text-[#800020] font-bold px-1.5 py-0.2 rounded-full border border-[#F8CCD4]">
                 {expenses.length}
               </span>
             </button>
@@ -513,9 +513,9 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = ({ onOpenShiftModal
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsExpenseModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-[#800020] bg-[#FCE8EB] hover:bg-[#F8CCD4] rounded-lg border border-[#F8CCD4] transition-colors cursor-pointer"
             >
-              <ArrowDownCircle className="w-3.5 h-3.5 text-[#F43F5E]" />
+              <ArrowDownCircle className="w-3.5 h-3.5 text-[#800020]" />
               <span>+ Catat Beli Stok / Kas Keluar</span>
             </button>
             <button
@@ -559,17 +559,17 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = ({ onOpenShiftModal
           {/* 3. Pengeluaran Kas / Pembelian Stok */}
           <div 
             onClick={() => setActiveTab('expenses')}
-            className="p-3 rounded-xl bg-rose-50/50 border border-rose-200 cursor-pointer hover:bg-rose-50 transition-colors"
+            className="p-3 rounded-xl bg-[#FFF5F7] border border-[#FCE4E8] cursor-pointer hover:bg-[#FCE8EB] transition-colors"
             title="Klik untuk melihat rincian pengeluaran kas"
           >
-            <div className="flex items-center justify-between text-rose-700 mb-1">
+            <div className="flex items-center justify-between text-[#800020] mb-1">
               <span className="text-[11px] font-bold">Kas Keluar / Beli Stok</span>
-              <ArrowDownCircle className="w-3.5 h-3.5 text-[#F43F5E]" />
+              <ArrowDownCircle className="w-3.5 h-3.5 text-[#800020]" />
             </div>
-            <div className="text-sm sm:text-base font-black font-mono text-rose-600">
+            <div className="text-sm sm:text-base font-black font-mono text-[#800020]">
               -{formatRupiah(todayCashSummary.todayExpenses)}
             </div>
-            <div className="text-[10px] text-rose-600/80 mt-0.5 flex items-center justify-between">
+            <div className="text-[10px] text-[#800020]/80 mt-0.5 flex items-center justify-between">
               <span>Beli stok &amp; operasional</span>
               <span className="underline font-bold">Rincian &rarr;</span>
             </div>
@@ -604,7 +604,7 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = ({ onOpenShiftModal
               {todayCashSummary.difference === 0 ? (
                 <Check className="w-3.5 h-3.5 text-neutral-400" />
               ) : (
-                <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
+                <Info className="w-3.5 h-3.5 text-neutral-500" />
               )}
             </div>
             <div
@@ -823,15 +823,15 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = ({ onOpenShiftModal
           {/* 4 Kartu KPI Ringkasan Pengeluaran Kas */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {/* Total Kas Keluar */}
-            <div className="p-4 rounded-2xl bg-white border border-rose-200 shadow-xs bg-rose-50/20">
+            <div className="p-4 rounded-2xl bg-[#FFF5F7] border border-[#FCE4E8] shadow-xs">
               <div className="flex items-center justify-between text-neutral-500 mb-1">
-                <span className="text-xs font-semibold text-rose-700">Total Pengeluaran Kas</span>
-                <ArrowDownCircle className="w-4 h-4 text-[#F43F5E]" />
+                <span className="text-xs font-bold text-[#800020]">Total Pengeluaran Kas</span>
+                <ArrowDownCircle className="w-4 h-4 text-[#800020]" />
               </div>
-              <div className="text-xl font-black font-mono text-rose-600 tracking-tight">
+              <div className="text-xl font-black font-mono text-[#800020] tracking-tight">
                 {formatRupiah(expenseMetrics.totalAmount)}
               </div>
-              <div className="text-[11px] text-neutral-400 mt-1">
+              <div className="text-[11px] text-stone-500 mt-1 font-medium">
                 Dari {expenseMetrics.count} catatan pengeluaran
               </div>
             </div>
@@ -910,7 +910,7 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = ({ onOpenShiftModal
               <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                 <button
                   onClick={() => setIsExpenseModalOpen(true)}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-white bg-[#F43F5E] hover:bg-[#E11D48] rounded-xl shadow-xs transition-colors shrink-0 cursor-pointer"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-xl shadow-xs transition-colors shrink-0 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>+ Catat Pengeluaran</span>
@@ -934,7 +934,7 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = ({ onOpenShiftModal
                   onClick={() => setExpenseCategoryFilter('all')}
                   className={`px-2.5 py-1 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors cursor-pointer ${
                     expenseCategoryFilter === 'all'
-                      ? 'bg-rose-50 text-[#F43F5E] border border-rose-200 font-bold'
+                      ? 'bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4] font-bold'
                       : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200/60'
                   }`}
                 >
@@ -944,7 +944,7 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = ({ onOpenShiftModal
                   onClick={() => setExpenseCategoryFilter('pembelian_stok')}
                   className={`px-2.5 py-1 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1 ${
                     expenseCategoryFilter === 'pembelian_stok'
-                      ? 'bg-rose-50 text-[#F43F5E] border border-rose-200 font-bold'
+                      ? 'bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4] font-bold'
                       : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200/60'
                   }`}
                 >
@@ -955,7 +955,7 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = ({ onOpenShiftModal
                   onClick={() => setExpenseCategoryFilter('kemasan_packaging')}
                   className={`px-2.5 py-1 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1 ${
                     expenseCategoryFilter === 'kemasan_packaging'
-                      ? 'bg-rose-50 text-[#F43F5E] border border-rose-200 font-bold'
+                      ? 'bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4] font-bold'
                       : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200/60'
                   }`}
                 >
@@ -966,7 +966,7 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = ({ onOpenShiftModal
                   onClick={() => setExpenseCategoryFilter('operasional')}
                   className={`px-2.5 py-1 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1 ${
                     expenseCategoryFilter === 'operasional'
-                      ? 'bg-rose-50 text-[#F43F5E] border border-rose-200 font-bold'
+                      ? 'bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4] font-bold'
                       : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200/60'
                   }`}
                 >
@@ -977,7 +977,7 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = ({ onOpenShiftModal
                   onClick={() => setExpenseCategoryFilter('konsumsi_transport')}
                   className={`px-2.5 py-1 text-xs font-semibold rounded-lg whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1 ${
                     expenseCategoryFilter === 'konsumsi_transport'
-                      ? 'bg-rose-50 text-[#F43F5E] border border-rose-200 font-bold'
+                      ? 'bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4] font-bold'
                       : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200/60'
                   }`}
                 >
@@ -1134,16 +1134,16 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = ({ onOpenShiftModal
           </div>
 
           {/* Arus Kas Ringkas Banner */}
-          <div className="p-3 bg-neutral-50 rounded-2xl border border-neutral-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2 text-neutral-700">
-              <Sparkles className="w-4 h-4 text-[#F43F5E]" />
+          <div className="p-3 bg-[#FFF5F7] rounded-2xl border border-[#FCE4E8] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2 text-black">
+              <Sparkles className="w-4 h-4 text-[#800020]" />
               <span>
                 Omset Penjualan: <strong>{formatRupiah(salesMetrics.totalRevenue)}</strong> | 
-                Total Pengeluaran Kas: <strong className="text-rose-600">-{formatRupiah(expenseMetrics.totalAmount)}</strong>
+                Total Pengeluaran Kas: <strong className="text-[#800020]">-{formatRupiah(expenseMetrics.totalAmount)}</strong>
               </span>
             </div>
-            <div className="font-semibold text-neutral-800">
-              Arus Kas Bersih: <span className="font-mono font-bold text-[#F43F5E]">{formatRupiah(salesMetrics.totalRevenue - expenseMetrics.totalAmount)}</span>
+            <div className="font-semibold text-black">
+              Arus Kas Bersih: <span className="font-mono font-bold text-[#800020]">{formatRupiah(salesMetrics.totalRevenue - expenseMetrics.totalAmount)}</span>
             </div>
           </div>
 

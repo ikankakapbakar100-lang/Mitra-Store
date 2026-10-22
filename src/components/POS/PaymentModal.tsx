@@ -62,13 +62,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
       const matrixSize = 25;
       const cellSize = size / matrixSize;
 
-      ctx.fillStyle = selectedMethod === 'shopeepay' ? '#F43F5E' : '#0F172A';
+      ctx.fillStyle = selectedMethod === 'shopeepay' ? '#800020' : '#000000';
 
       const drawFinder = (startX: number, startY: number) => {
         ctx.fillRect(startX * cellSize, startY * cellSize, 7 * cellSize, 7 * cellSize);
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect((startX + 1) * cellSize, (startY + 1) * cellSize, 5 * cellSize, 5 * cellSize);
-        ctx.fillStyle = selectedMethod === 'shopeepay' ? '#F43F5E' : '#0F172A';
+        ctx.fillStyle = selectedMethod === 'shopeepay' ? '#800020' : '#000000';
         ctx.fillRect((startX + 2) * cellSize, (startY + 2) * cellSize, 3 * cellSize, 3 * cellSize);
       };
 
@@ -137,35 +137,35 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-pink-100 dark:border-zinc-800 max-w-xl w-full p-6 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div className="bg-white rounded-3xl shadow-2xl border border-[#FCE4E8] max-w-xl w-full p-5 sm:p-6 animate-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto text-black">
         
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-pink-100 dark:border-zinc-800">
+        <div className="flex items-center justify-between pb-3 border-b border-[#FCE4E8]">
           <div>
-            <h3 className="font-bold text-base text-slate-900 dark:text-white">
+            <h3 className="font-black text-base text-black">
               Metode Pembayaran
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-stone-600">
               Pilih pembayaran digital atau tunai
             </p>
           </div>
           <button 
             onClick={onClose} 
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+            className="p-1.5 rounded-full text-stone-500 hover:text-black hover:bg-[#FCE8EB] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Bill Total Banner in Pink & White */}
-        <div className="mt-4 p-4 rounded-2xl bg-linear-to-r from-pink-500 via-[#F43F5E] to-[#EC4899] text-white flex items-center justify-between shadow-md shadow-pink-500/20">
+        {/* Bill Total Banner in Maroon */}
+        <div className="mt-4 p-4 rounded-2xl bg-[#800020] text-white flex items-center justify-between shadow-md shadow-rose-950/20">
           <div>
-            <span className="text-[10px] text-pink-100 uppercase tracking-wider font-bold">
+            <span className="text-[10px] text-pink-200 uppercase tracking-wider font-black">
               Total Tagihan
             </span>
             {selectedCustomer && (
-              <div className="text-xs text-white font-semibold">
+              <div className="text-xs text-white font-bold">
                 {selectedCustomer.name} ({selectedCustomer.tier})
               </div>
             )}
@@ -177,7 +177,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
 
         {/* Payment Channels Grid */}
         <div className="mt-4">
-          <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-400 mb-2">
+          <label className="block text-xs font-bold text-black mb-2">
             Pilihan Metode:
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -190,14 +190,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
                     setSelectedMethod(m.id);
                     setErrorMessage('');
                   }}
-                  className={`p-2.5 rounded-2xl border text-xs font-semibold text-left transition-all ${
+                  className={`p-2.5 rounded-2xl border text-xs font-semibold text-left transition-all cursor-pointer ${
                     isSelected
-                      ? 'border-[#F43F5E] bg-pink-50 dark:bg-pink-950/40 text-[#F43F5E] ring-2 ring-[#F43F5E]/20 shadow-xs'
-                      : 'border-pink-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:border-pink-200'
+                      ? 'border-[#800020] bg-[#FCE8EB] text-[#800020] ring-2 ring-[#800020]/20 shadow-2xs font-bold'
+                      : 'border-[#FCE4E8] bg-white text-black hover:border-[#F8CCD4] hover:bg-[#FFF5F7]'
                   }`}
                 >
-                  <div className="font-bold truncate">{m.label}</div>
-                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                  <div className="font-extrabold truncate">{m.label}</div>
+                  <div className="text-[10px] text-stone-500 font-mono mt-0.5">
                     {m.id === 'tunai' ? 'Kembalian' : 'Instan'}
                   </div>
                 </button>
@@ -207,25 +207,25 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
         </div>
 
         {/* Method Specific View */}
-        <div className="mt-4 p-4 rounded-2xl border border-pink-100 dark:border-zinc-800 bg-pink-50/20 dark:bg-zinc-800/40">
+        <div className="mt-4 p-4 rounded-2xl border border-[#FCE4E8] bg-[#FFF5F7]">
           
           {/* QRIS / ShopeePay View */}
           {(selectedMethod === 'qris' || selectedMethod === 'shopeepay') && (
             <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
-              <div className="p-3 bg-white rounded-2xl shadow-xs border border-pink-100 shrink-0">
+              <div className="p-3 bg-white rounded-2xl shadow-2xs border border-[#FCE4E8] shrink-0">
                 <canvas ref={qrCanvasRef} className="w-36 h-36 mx-auto block" />
               </div>
               <div className="space-y-1.5 flex-1">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-bold rounded-lg bg-pink-100 text-[#F43F5E] dark:bg-pink-950/60">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-extrabold rounded-lg bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4]">
                   {selectedMethod === 'shopeepay' ? 'ShopeePay Merchant QR' : 'QRIS Standar Nasional'}
                 </div>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                <h4 className="text-sm font-black text-black">
                   Pindai {formatRupiah(cartTotal)}
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+                <p className="text-xs text-stone-600 leading-relaxed font-medium">
                   Buka aplikasi Shopee, BCA, Gojek, OVO, atau mobile banking apa saja. Arahkan kamera ke QR di layar.
                 </p>
-                <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                <div className="text-[11px] text-emerald-700 font-bold">
                   Verifikasi pembayaran otomatis real-time.
                 </div>
               </div>
@@ -236,14 +236,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
           {selectedMethod === 'tunai' && (
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-zinc-400 mb-1">
+                <label className="block text-xs font-bold text-black mb-1">
                   Uang Tunai Diterima:
                 </label>
                 <input
                   type="text"
                   value={cashAmountInput}
                   onChange={(e) => setCashAmountInput(e.target.value)}
-                  className="w-full px-3 py-2 text-base font-bold font-mono rounded-xl border border-pink-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#F43F5E]"
+                  className="w-full px-3 py-2 text-base font-black font-mono rounded-xl border border-[#FCE4E8] bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#800020]"
                   placeholder="0"
                 />
               </div>
@@ -253,7 +253,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
                 <button
                   type="button"
                   onClick={() => handleQuickCash(cartTotal)}
-                  className="px-2.5 py-1 text-xs font-bold rounded-xl bg-pink-100 dark:bg-pink-950 text-[#F43F5E] hover:bg-pink-200"
+                  className="px-2.5 py-1 text-xs font-extrabold rounded-xl bg-[#FCE8EB] text-[#800020] hover:bg-[#F8CCD4] border border-[#F8CCD4] cursor-pointer"
                 >
                   Uang Pas
                 </button>
@@ -264,7 +264,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
                       key={amount}
                       type="button"
                       onClick={() => handleQuickCash(amount)}
-                      className="px-2.5 py-1 text-xs font-semibold font-mono rounded-xl bg-white dark:bg-zinc-800 border border-pink-100 dark:border-zinc-700 text-slate-800 dark:text-white hover:bg-pink-50"
+                      className="px-2.5 py-1 text-xs font-bold font-mono rounded-xl bg-white border border-[#FCE4E8] text-black hover:bg-[#FCE8EB] hover:text-[#800020] cursor-pointer transition-colors"
                     >
                       {formatRupiah(amount)}
                     </button>
@@ -274,8 +274,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
               {/* Change calculation */}
               <div className={`p-3 rounded-xl text-xs flex justify-between items-center ${
                 isCashInsufficient
-                  ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 font-bold'
-                  : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold'
+                  ? 'bg-rose-100 text-[#800020] border border-rose-300 font-bold'
+                  : 'bg-emerald-50 text-emerald-900 border border-emerald-200 font-bold'
               }`}>
                 <span>{isCashInsufficient ? 'Uang Kurang:' : 'Uang Kembalian:'}</span>
                 <span className="text-sm font-mono font-black">
@@ -289,8 +289,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
 
           {/* E-Wallets / Cards View */}
           {(selectedMethod === 'gopay' || selectedMethod === 'ovo' || selectedMethod === 'dana' || selectedMethod === 'kartu' || selectedMethod === 'transfer') && (
-            <div className="space-y-1.5 text-xs text-slate-600 dark:text-zinc-400">
-              <div className="font-bold text-slate-900 dark:text-white">
+            <div className="space-y-1.5 text-xs text-stone-700">
+              <div className="font-extrabold text-black">
                 Instruksi Pembayaran {selectedMethod.toUpperCase()}
               </div>
               <p>
@@ -311,12 +311,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
             value={notesInput}
             onChange={(e) => setNotesInput(e.target.value)}
             placeholder="Catatan transaksi (opsional)..."
-            className="w-full px-3 py-1.5 text-xs rounded-xl border border-pink-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#F43F5E]"
+            className="w-full px-3 py-1.5 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black focus:outline-none focus:ring-1 focus:ring-[#800020]"
           />
         </div>
 
         {errorMessage && (
-          <div className="mt-3 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 text-xs flex items-center gap-2">
+          <div className="mt-3 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-[#800020] text-xs font-bold flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
@@ -327,7 +327,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 text-xs font-semibold text-slate-600 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-800 rounded-2xl"
+            className="flex-1 py-2.5 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-2xl cursor-pointer transition-colors"
           >
             Batal
           </button>
@@ -337,8 +337,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
             onClick={handleConfirmPayment}
             className={`flex-1 py-2.5 text-xs font-bold text-white rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2 ${
               isProcessing || isCashInsufficient
-                ? 'bg-slate-300 dark:bg-zinc-800 cursor-not-allowed text-slate-500'
-                : 'bg-[#F43F5E] hover:bg-[#E11D48] active:scale-[0.99] cursor-pointer'
+                ? 'bg-stone-300 cursor-not-allowed text-stone-500'
+                : 'bg-[#800020] hover:bg-[#660019] active:scale-[0.99] cursor-pointer'
             }`}
           >
             {isProcessing ? (

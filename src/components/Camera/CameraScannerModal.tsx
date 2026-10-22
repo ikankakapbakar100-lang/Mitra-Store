@@ -221,27 +221,27 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-150">
-      <div className="bg-white rounded-3xl shadow-2xl border border-pink-100 max-w-lg w-full overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div className="bg-white rounded-3xl shadow-2xl border border-[#FCE4E8] max-w-lg w-full overflow-hidden flex flex-col animate-in zoom-in-95 duration-150 text-black">
         
         {/* Header */}
-        <div className="p-4 px-6 border-b border-pink-100 flex items-center justify-between bg-white">
+        <div className="p-4 px-6 border-b border-[#FCE4E8] flex items-center justify-between bg-white">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-2xl bg-pink-50 text-[#F43F5E] flex items-center justify-center border border-pink-100">
+            <div className="w-8 h-8 rounded-2xl bg-[#FCE8EB] text-[#800020] flex items-center justify-center border border-[#F8CCD4]">
               <Camera className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-slate-900">
+              <h3 className="font-black text-sm text-black">
                 {mode === 'photo' ? 'Ambil Foto Produk' : 'Kamera Barcode Scanner'}
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-stone-600 font-medium">
                 Arahkan lensa ke barcode atau cetakan kue
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-1.5 rounded-full text-stone-500 hover:text-black hover:bg-[#FCE8EB] transition-colors cursor-pointer"
             title="Tutup"
           >
             <X className="w-5 h-5" />
@@ -254,7 +254,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
           {/* State: Meminta Izin */}
           {permissionState === 'requesting' && (
             <div className="text-center p-6 space-y-3 text-white max-w-xs">
-              <RefreshCw className="w-8 h-8 mx-auto animate-spin text-[#F43F5E]" />
+              <RefreshCw className="w-8 h-8 mx-auto animate-spin text-[#800020]" />
               <p className="text-xs font-bold text-slate-100">
                 Meminta Akses Kamera...
               </p>
@@ -297,7 +297,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
                 <button
                   type="button"
                   onClick={startCamera}
-                  className="w-full sm:w-auto px-4 py-2 text-xs font-bold bg-[#F43F5E] hover:bg-[#E11D48] text-white rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                  className="w-full sm:w-auto px-4 py-2 text-xs font-bold bg-[#800020] hover:bg-[#660019] text-white rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>Tanyakan Izin Lagi</span>
@@ -335,16 +335,16 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
           {/* Viewfinder Laser Overlay */}
           {permissionState === 'granted' && (
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-              <div className="w-60 h-44 border-2 border-dashed border-[#F43F5E]/80 rounded-2xl relative shadow-lg flex items-center justify-center">
-                <div className="absolute -top-1 -left-1 w-5 h-5 border-t-4 border-l-4 border-[#F43F5E] rounded-tl-lg" />
-                <div className="absolute -top-1 -right-1 w-5 h-5 border-t-4 border-r-4 border-[#F43F5E] rounded-tr-lg" />
-                <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-4 border-l-4 border-[#F43F5E] rounded-bl-lg" />
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-4 border-r-4 border-[#F43F5E] rounded-br-lg" />
+              <div className="w-60 h-44 border-2 border-dashed border-[#800020] rounded-2xl relative shadow-lg flex items-center justify-center">
+                <div className="absolute -top-1 -left-1 w-5 h-5 border-t-4 border-l-4 border-[#800020] rounded-tl-lg" />
+                <div className="absolute -top-1 -right-1 w-5 h-5 border-t-4 border-r-4 border-[#800020] rounded-tr-lg" />
+                <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-4 border-l-4 border-[#800020] rounded-bl-lg" />
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-4 border-r-4 border-[#800020] rounded-br-lg" />
 
-                <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-[#F43F5E] to-transparent shadow-[0_0_8px_#F43F5E] animate-pulse" />
+                <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-[#800020] to-transparent shadow-[0_0_8px_#800020] animate-pulse" />
               </div>
 
-              <div className="absolute bottom-4 px-3 py-1 rounded-full bg-black/60 backdrop-blur-sm text-[11px] text-white font-medium flex items-center gap-1.5 border border-white/10">
+              <div className="absolute bottom-4 px-3 py-1 rounded-full bg-black/60 backdrop-blur-xs text-[11px] text-white font-medium flex items-center gap-1.5 border border-white/10">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                 <span>Kamera Aktif · Arahkan ke Barcode</span>
               </div>
@@ -353,7 +353,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
 
           {/* Success scan badge notification */}
           {detectedItem && (
-            <div className="absolute inset-0 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center animate-in zoom-in-95 duration-200">
+            <div className="absolute inset-0 bg-black/85 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center animate-in zoom-in-95 duration-200">
               <div className="w-14 h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center mb-2 shadow-lg animate-bounce">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
@@ -366,13 +366,13 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
         </div>
 
         {/* Footer Area: Photo capture button OR Quick Test barcode simulation */}
-        <div className="p-4 bg-white border-t border-pink-100 space-y-2.5">
+        <div className="p-4 bg-white border-t border-[#FCE4E8] space-y-2.5">
           {mode === 'photo' ? (
             <div className="flex items-center justify-between gap-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                className="flex-1 py-2 text-xs font-bold rounded-xl border border-[#FCE4E8] bg-[#FCE8EB] text-black hover:bg-[#F8CCD4] cursor-pointer"
               >
                 Batal
               </button>
@@ -380,7 +380,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
                 type="button"
                 onClick={handleSnapPhoto}
                 disabled={permissionState !== 'granted'}
-                className="flex-1 py-2 text-xs font-bold bg-[#F43F5E] text-white rounded-xl hover:bg-[#E11D48] disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                className="flex-1 py-2 text-xs font-bold bg-[#800020] text-white rounded-xl hover:bg-[#660019] disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <Camera className="w-4 h-4" />
                 <span>Jepret Foto</span>
@@ -388,15 +388,15 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
             </div>
           ) : (
             <div>
-              <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2 font-medium">
+              <div className="flex items-center justify-between text-[11px] text-stone-700 mb-2 font-medium">
                 <span className="flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-[#F43F5E]" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#800020]" />
                   <span>Uji scan cepat produk (tetap bisa digunakan tanpa kamera):</span>
                 </span>
                 {retryCount > 0 && (
                   <button
                     onClick={startCamera}
-                    className="text-[10px] text-[#F43F5E] font-bold hover:underline cursor-pointer"
+                    className="text-[10px] text-[#800020] font-bold hover:underline cursor-pointer"
                   >
                     Tanyakan Izin Lagi ({retryCount})
                   </button>
@@ -408,19 +408,19 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
                   <button
                     key={p.id}
                     onClick={() => handleTriggerBarcodeMatch(p)}
-                    className="p-2 rounded-xl text-left border border-pink-100 bg-pink-50/20 hover:border-[#F43F5E] hover:bg-pink-50/50 transition-all flex items-center gap-2 group cursor-pointer"
+                    className="p-2 rounded-xl text-left border border-[#FCE4E8] bg-[#FFF5F7] hover:border-[#800020] hover:bg-[#FCE8EB] transition-all flex items-center gap-2 group cursor-pointer"
                   >
                     <img
                       src={p.imageUrl}
                       alt={p.name}
                       referrerPolicy="no-referrer"
-                      className="w-8 h-8 rounded-lg object-cover shrink-0 border border-pink-100"
+                      className="w-8 h-8 rounded-lg object-cover shrink-0 border border-[#F8CCD4]"
                     />
                     <div className="truncate flex-1">
-                      <div className="text-[11px] font-bold text-slate-800 truncate group-hover:text-[#F43F5E]">
+                      <div className="text-[11px] font-bold text-black truncate group-hover:text-[#800020]">
                         {p.name}
                       </div>
-                      <div className="text-[9px] font-mono text-slate-400">
+                      <div className="text-[9px] font-mono text-stone-600">
                         {p.barcode}
                       </div>
                     </div>

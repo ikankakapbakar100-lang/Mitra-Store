@@ -147,7 +147,7 @@ interface POSContextType {
 const POSContext = createContext<POSContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
-  PRODUCTS: 'kasir_shopee_products_v2',
+  PRODUCTS: 'kasir_shopee_products_v3',
   TRANSACTIONS: 'kasir_shopee_transactions_v2',
   CUSTOMERS: 'kasir_shopee_customers_v1',
   STORE_PROFILE: 'kasir_shopee_store_profile_v2',
@@ -396,26 +396,26 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [notifications, setNotifications] = useState<AppNotification[]>([
     {
       id: 'notif-1',
-      title: 'Peringatan Stok Menipis!',
-      message: 'Cetakan Pukis 10 Lubang (4 buah) & Panci Susu Stainless 18cm (2 buah) di bawah batas minimum.',
-      type: 'stock_alert',
-      timestamp: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
-      read: false,
+      title: 'Sistem POS MitraStore Aktif',
+      message: 'Katalog cetakan kue, loyang, dan perabot dapur siap digunakan.',
+      type: 'system',
+      timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+      read: true,
     },
     {
       id: 'notif-2',
-      title: 'Stok Habis!',
-      message: 'Cetakan Silikon Puding & Coklat Bunga Sakura habis (0 pcs). Segera lakukan restock ke supplier.',
-      type: 'stock_alert',
-      timestamp: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-      read: false,
+      title: 'Shopee Open Platform Terhubung',
+      message: 'API Shopee v2.0 aktif. Stok toko fisik dan marketplace tersinkronisasi otomatis.',
+      type: 'shopee_order',
+      timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+      read: true,
     },
     {
       id: 'notif-3',
-      title: 'Shopee Terhubung & Sinkron',
-      message: 'API Shopee v2.0 aktif. Stok toko fisik & marketplace tersinkronisasi otomatis.',
-      type: 'shopee_order',
-      timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+      title: 'Pencatatan Kas & Struk Siap',
+      message: 'Fitur kasir POS dan rekap pengeluaran beli stok siap digunakan.',
+      type: 'sales',
+      timestamp: new Date().toISOString(),
       read: true,
     },
   ]);
