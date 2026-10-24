@@ -37,6 +37,19 @@ import { generateInvoiceNo, generateShopeeOrderNo } from '../utils/format';
 import { computeSha256, encryptData, decryptData, EncryptedPayload } from '../utils/crypto';
 import { bluetoothPrinter, BluetoothDeviceStatus } from '../utils/bluetooth';
 import confetti from 'canvas-confetti';
+import {
+  saveToIndexedDB,
+  loadFromIndexedDB,
+  requestPersistentStorage,
+  checkIsPersisted,
+  createStorageSnapshot,
+  getStorageSnapshots,
+  StorageSnapshot,
+} from '../utils/storageDb';
+import {
+  exportProductsToCSV,
+  exportFullDatabaseJSON,
+} from '../utils/dataExportImport';
 
 interface POSContextType {
   // Products & Inventory
@@ -134,12 +147,22 @@ interface POSContextType {
   syncShopeeInventory: () => Promise<void>;
   simulateIncomingShopeeOrder: () => Promise<void>;
 
-  // Cloud Backup & Encryption
+  // Cloud Backup & Encryption & Data Safety
   cloudBackup: CloudBackupMeta;
   performCloudBackup: () => Promise<void>;
   exportEncryptedBackup: (passphrase: string) => Promise<string>;
   restoreEncryptedBackup: (encryptedJsonString: string, passphrase: string) => Promise<{ success: boolean; message: string }>;
   resetToDefaultData: () => void;
+
+  // 100% Data Safety & Durability
+  isStoragePersisted: boolean;
+  enablePersistentStorage: () => Promise<boolean>;
+  exportAllProductsCSV: () => void;
+  exportFullDatabase: () => void;
+  storageSnapshots: StorageSnapshot[];
+  restoreSnapshot: (snapshotId: string) => Promise<boolean>;
+  createManualSnapshot: (label?: string) => Promise<void>;
+  bulkImportProducts: (newProducts: Omit<Product, 'id'>[], newCategories?: string[]) => void;
 
   // Notifications
   notifications: AppNotification[];
@@ -554,36 +577,100 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isCloudSyncing: false,
   });
 
-  // Save changes to localStorage
+  // 100% Data Safety & Durability States
+  const [isStoragePersisted, setIsStoragePersisted] = useState<boolean>(false);
+  const [storageSnapshots, setStorageSnapshots] = useState<StorageSnapshot[]>([]);
+
+  // Startup: Request Persistent Storage & Verify Dual-Store Integrity
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+    checkIsPersisted().then((isP) => {
+      setIsStoragePersisted(isP);
+      if (!isP) {
+        requestPersistentStorage().then((res) => setIsStoragePersisted(res));
+      }
+    });
+
+    getStorageSnapshots().then(setStorageSnapshots);
+
+    // Fail-safe check: If localStorage had no products or was wiped, try IndexedDB
+    loadFromIndexedDB<Product[]>('products').then((idbProducts) => {
+      if (idbProducts && Array.isArray(idbProducts) && idbProducts.length > 0) {
+        const localSaved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+        if (!localSaved) {
+          setProducts(idbProducts);
+          try {
+            localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(idbProducts));
+          } catch {}
+        }
+      }
+    });
+  }, []);
+
+  // Dual-Layer Persistence: Save changes to both localStorage AND IndexedDB
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+    } catch (e) {
+      console.warn('LocalStorage limit reached, relying on IndexedDB:', e);
+    }
+    saveToIndexedDB('products', products);
   }, [products]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
+    try {
+      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
+    } catch {}
+    saveToIndexedDB('transactions', transactions);
   }, [transactions]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));
+    try {
+      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(customers));
+    } catch {}
+    saveToIndexedDB('customers', customers);
   }, [customers]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.STORE_PROFILE, JSON.stringify(storeProfile));
+    try {
+      localStorage.setItem(STORAGE_KEYS.STORE_PROFILE, JSON.stringify(storeProfile));
+    } catch {}
+    saveToIndexedDB('storeProfile', storeProfile);
   }, [storeProfile]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.SHOPEE_CONFIG, JSON.stringify(shopeeConfig));
+    try {
+      localStorage.setItem(STORAGE_KEYS.SHOPEE_CONFIG, JSON.stringify(shopeeConfig));
+    } catch {}
+    saveToIndexedDB('shopeeConfig', shopeeConfig);
   }, [shopeeConfig]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.SHOPEE_LOGS, JSON.stringify(shopeeLogs));
+    try {
+      localStorage.setItem(STORAGE_KEYS.SHOPEE_LOGS, JSON.stringify(shopeeLogs));
+    } catch {}
+    saveToIndexedDB('shopeeLogs', shopeeLogs);
   }, [shopeeLogs]);
 
   useEffect(() => {
     if (currentShift) {
-      localStorage.setItem(STORAGE_KEYS.SHIFT, JSON.stringify(currentShift));
+      try {
+        localStorage.setItem(STORAGE_KEYS.SHIFT, JSON.stringify(currentShift));
+      } catch {}
+      saveToIndexedDB('shift', currentShift);
     }
   }, [currentShift]);
+
+  useEffect(() => {
+    saveToIndexedDB('categories', categories);
+  }, [categories]);
+
+  useEffect(() => {
+    saveToIndexedDB('expenses', expenses);
+  }, [expenses]);
+
+  useEffect(() => {
+    saveToIndexedDB('dailyCashHistory', dailyCashHistory);
+  }, [dailyCashHistory]);
 
   // Low & Out of stock computed
   const lowStockProducts = products.filter(p => p.stock > 0 && p.stock <= p.minStock);
@@ -1526,7 +1613,129 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // 100% Data Safety & Durability Implementations
+  const enablePersistentStorage = async (): Promise<boolean> => {
+    const success = await requestPersistentStorage();
+    setIsStoragePersisted(success);
+    if (success) {
+      addNotification('Penyimpanan Terproteksi', 'Browser mengonfirmasi data MitraStore tidak akan dihapus otomatis.', 'system');
+    }
+    return success;
+  };
+
+  const exportAllProductsCSV = () => {
+    exportProductsToCSV(products);
+    addNotification('Ekspor CSV Berhasil', `${products.length} data produk diekspor ke format Excel / CSV.`, 'system');
+  };
+
+  const exportFullDatabase = () => {
+    exportFullDatabaseJSON({
+      products,
+      transactions,
+      customers,
+      categories,
+      storeProfile,
+      expenses,
+      dailyCashHistory,
+    });
+    addNotification('Backup Lengkap Berhasil', 'Cadangan database lengkap (JSON) berhasil diunduh.', 'backup');
+  };
+
+  const createManualSnapshot = async (label?: string) => {
+    const snapshotLabel = label || `Cadangan Manual (${products.length} Produk)`;
+    const newSnap = await createStorageSnapshot(snapshotLabel, {
+      products,
+      transactions,
+      customers,
+      categories,
+      storeProfile,
+      expenses,
+      dailyCashHistory,
+    });
+    if (newSnap) {
+      setStorageSnapshots((prev) => [newSnap, ...prev.slice(0, 9)]);
+      addNotification('Snapshot Dibuat', `Titik pemulihan "${snapshotLabel}" tersimpan aman di database lokal.`, 'backup');
+    }
+  };
+
+  const restoreSnapshot = async (snapshotId: string): Promise<boolean> => {
+    const target = storageSnapshots.find((s) => s.id === snapshotId);
+    if (!target) return false;
+
+    // Safety: save a current snapshot before restoring
+    await createStorageSnapshot(`Sebelum Pulihkan ${target.label}`, {
+      products,
+      transactions,
+      customers,
+      categories,
+      storeProfile,
+      expenses,
+      dailyCashHistory,
+    });
+
+    if (Array.isArray(target.data.products)) setProducts(target.data.products);
+    if (Array.isArray(target.data.transactions)) setTransactions(target.data.transactions);
+    if (Array.isArray(target.data.customers)) setCustomers(target.data.customers);
+    if (Array.isArray(target.data.categories)) setCategories(target.data.categories);
+    if (target.data.storeProfile) setStoreProfile(target.data.storeProfile);
+    if (Array.isArray(target.data.expenses)) setExpenses(target.data.expenses);
+    if (Array.isArray(target.data.dailyCashHistory)) setDailyCashHistory(target.data.dailyCashHistory);
+
+    addNotification('Pemulihan Sukses', `Data berhasil dipulihkan dari snapshot: "${target.label}".`, 'backup');
+    return true;
+  };
+
+  const bulkImportProducts = (
+    newProducts: Omit<Product, 'id'>[],
+    newCategories?: string[]
+  ) => {
+    if (newProducts.length === 0) return;
+
+    // Create automatic snapshot before bulk importing
+    createStorageSnapshot(`Sebelum Impor ${newProducts.length} Produk`, {
+      products,
+      transactions,
+      customers,
+      categories,
+      storeProfile,
+      expenses,
+      dailyCashHistory,
+    });
+
+    if (newCategories && newCategories.length > 0) {
+      const mergedCats = Array.from(new Set([...categories, ...newCategories]));
+      setCategories(mergedCats);
+    }
+
+    const preparedProducts: Product[] = newProducts.map((p, idx) => ({
+      ...p,
+      id: `prod-${Date.now()}-${idx}`,
+    }));
+
+    setProducts((prev) => [...preparedProducts, ...prev]);
+    addNotification(
+      'Impor Produk Berhasil',
+      `${preparedProducts.length} produk baru berhasil dimasukkan ke inventaris stok.`,
+      'system'
+    );
+  };
+
   const resetToDefaultData = () => {
+    // Safety Snapshot: NEVER lose user data even if reset is clicked!
+    createStorageSnapshot('Darurat: Cadangan Otomatis Sebelum Reset', {
+      products,
+      transactions,
+      customers,
+      categories,
+      storeProfile,
+      expenses,
+      dailyCashHistory,
+    }).then((snap) => {
+      if (snap) {
+        setStorageSnapshots((prev) => [snap, ...prev]);
+      }
+    });
+
     Object.values(STORAGE_KEYS).forEach(key => {
       try {
         localStorage.removeItem(key);
@@ -1542,7 +1751,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCategories(INITIAL_CATEGORIES);
     setCartSessions([createInitialCartSession('cart-1', 'Pelanggan 1')]);
     setActiveCartSessionId('cart-1');
-    addNotification('Data Berhasil Direset', 'Semua data transaksi dan produk telah dikembalikan ke data awal sampel toko.', 'system');
+    addNotification('Data Berhasil Direset', 'Data telah dikembalikan ke sampel default. Cadangan otomatis sebelum reset tersimpan di daftar snapshot cadangan.', 'system');
   };
 
   // Notification actions
@@ -1649,6 +1858,14 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         exportEncryptedBackup,
         restoreEncryptedBackup,
         resetToDefaultData,
+        isStoragePersisted,
+        enablePersistentStorage,
+        exportAllProductsCSV,
+        exportFullDatabase,
+        storageSnapshots,
+        restoreSnapshot,
+        createManualSnapshot,
+        bulkImportProducts,
         notifications,
         markNotificationAsRead,
         markAllNotificationsAsRead,

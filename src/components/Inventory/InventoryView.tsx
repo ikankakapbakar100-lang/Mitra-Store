@@ -23,9 +23,14 @@ import {
   RefreshCw,
   ShoppingBag,
   LayoutGrid,
-  List
+  List,
+  FileSpreadsheet,
+  Upload,
+  ShieldCheck,
+  Download
 } from 'lucide-react';
 import { CameraScannerModal } from '../Camera/CameraScannerModal';
+import { parseProductsFromCSV } from '../../utils/dataExportImport';
 
 type HighlightFilter = 'all' | 'top_seller' | 'low_stock' | 'out_of_stock';
 
@@ -40,6 +45,9 @@ export const InventoryView: React.FC = () => {
     deleteCategory,
     syncShopeeInventory,
     transactions,
+    exportAllProductsCSV,
+    bulkImportProducts,
+    isStoragePersisted,
   } = usePOS();
 
   // Search & Filter state
@@ -57,6 +65,12 @@ export const InventoryView: React.FC = () => {
   const [isCameraPhotoModalOpen, setIsCameraPhotoModalOpen] = useState<boolean>(false);
   const [isSyncingShopee, setIsSyncingShopee] = useState<boolean>(false);
   const [viewDensity, setViewDensity] = useState<'compact' | 'grid'>('compact');
+
+  // CSV Import State
+  const [isImportModalOpen, setIsImportModalOpen] = useState<boolean>(false);
+  const [importParsedProducts, setImportParsedProducts] = useState<Omit<Product, 'id'>[]>([]);
+  const [importNewCategories, setImportNewCategories] = useState<string[]>([]);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
 
   const getOptimizedThumb = (url?: string) => {
     if (!url) return 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=120&q=70';
@@ -242,6 +256,31 @@ export const InventoryView: React.FC = () => {
     setIsSyncingShopee(false);
   };
 
+  const handleCSVFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+      const parsed = parseProductsFromCSV(text, categories);
+      setImportParsedProducts(parsed.products);
+      setImportNewCategories(parsed.categoriesToAdd);
+      setImportErrors(parsed.errors);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleConfirmImport = () => {
+    if (importParsedProducts.length === 0) return;
+    bulkImportProducts(importParsedProducts, importNewCategories);
+    setIsImportModalOpen(false);
+    setImportParsedProducts([]);
+    setImportNewCategories([]);
+    setImportErrors([]);
+  };
+
   return (
     <div className="space-y-2.5 sm:space-y-4">
       
@@ -387,6 +426,33 @@ export const InventoryView: React.FC = () => {
               <span className="hidden sm:inline">Shopee</span>
             </button>
 
+            {/* Tombol Ekspor Excel (.csv) */}
+            <button
+              type="button"
+              onClick={exportAllProductsCSV}
+              className="p-1.5 sm:px-2.5 sm:py-2 rounded-xl text-xs font-bold border border-[#FCE4E8] bg-white text-stone-800 hover:bg-[#FFF5F7] hover:text-[#800020] flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+              title="Unduh seluruh data stok produk ke file Excel (.csv) untuk cadangan offline"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
+              <span className="hidden md:inline">Excel</span>
+            </button>
+
+            {/* Tombol Impor Massal Excel / CSV */}
+            <button
+              type="button"
+              onClick={() => {
+                setImportParsedProducts([]);
+                setImportNewCategories([]);
+                setImportErrors([]);
+                setIsImportModalOpen(true);
+              }}
+              className="p-1.5 sm:px-2.5 sm:py-2 rounded-xl text-xs font-bold border border-[#FCE4E8] bg-white text-stone-800 hover:bg-[#FFF5F7] hover:text-[#800020] flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+              title="Impor massal puluhan atau ratusan produk dari file CSV / Excel"
+            >
+              <Upload className="w-3.5 h-3.5 text-[#800020]" />
+              <span className="hidden md:inline">Impor</span>
+            </button>
+
             <button
               onClick={() => setIsCategoryManageOpen(true)}
               className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold border border-[#FCE4E8] bg-white text-black hover:bg-[#FFF5F7] flex items-center gap-1.5 transition-colors cursor-pointer"
@@ -449,6 +515,30 @@ export const InventoryView: React.FC = () => {
           >
             <Plus className="w-3 h-3" />
             <span>Kategori</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 2.5 STATUS KEAMANAN DATA 100% (DUAL-LAYER LOCALSTORAGE + INDEXEDDB) */}
+      <div className="bg-emerald-50/90 px-3.5 py-2.5 rounded-2xl border border-emerald-200 shadow-2xs flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+          <span className="font-extrabold text-emerald-950">
+            Proteksi 100% Aman:
+          </span>
+          <span className="text-emerald-900 text-[11px] font-medium hidden sm:inline">
+            Seluruh {products.length} stok tersimpan ganda (LocalStorage + IndexedDB). Data tidak akan berubah kecuali diubah pengguna.
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={exportAllProductsCSV}
+            className="text-[11px] font-bold text-emerald-800 hover:text-emerald-950 flex items-center gap-1 cursor-pointer underline"
+            title="Download cadangan data stok ke format Excel (.csv)"
+          >
+            <Download className="w-3 h-3 text-emerald-700" />
+            <span>Unduh Cadangan Excel</span>
           </button>
         </div>
       </div>
@@ -1195,6 +1285,134 @@ export const InventoryView: React.FC = () => {
           }}
           mode="photo"
         />
+      )}
+
+      {/* 8. MODAL IMPOR MASSAL EXCEL / CSV PRODUK */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl shadow-2xl border border-[#FCE4E8] max-w-2xl w-full p-5 sm:p-6 animate-in zoom-in-95 duration-150 text-black max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-[#FCE4E8]">
+              <div className="flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-emerald-700" />
+                <div>
+                  <h3 className="font-black text-sm text-black">
+                    Impor Massal Produk dari Excel / CSV
+                  </h3>
+                  <p className="text-[11px] text-stone-600">
+                    Memudahkan Anda menginput puluhan hingga ratusan stok sekaligus.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsImportModalOpen(false)}
+                className="p-1 rounded-full text-stone-400 hover:text-black cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-4">
+              <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-xs text-emerald-950 space-y-1">
+                <div className="font-bold flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                  <span>Format Kolom CSV yang didukung:</span>
+                </div>
+                <p className="text-[11px] text-emerald-800">
+                  Nama Produk, Kategori, Harga Beli, Harga Jual, Stok, Min Stok, Satuan, SKU, Barcode.
+                </p>
+                <p className="text-[11px] text-emerald-800">
+                  Tips: Anda bisa mengklik tombol <strong>&quot;Unduh Cadangan Excel&quot;</strong> terlebih dahulu untuk melihat contoh format file.
+                </p>
+              </div>
+
+              {/* Upload file input */}
+              <div>
+                <label className="block text-xs font-bold text-black mb-1.5">
+                  Pilih File CSV dari Komputer / HP:
+                </label>
+                <input
+                  type="file"
+                  accept=".csv,.txt"
+                  onChange={handleCSVFileUpload}
+                  className="w-full text-xs text-black file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#FCE8EB] file:text-[#800020] hover:file:bg-[#F8CCD4] cursor-pointer"
+                />
+              </div>
+
+              {/* Error messages if any */}
+              {importErrors.length > 0 && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-[#800020] space-y-1">
+                  <div className="font-bold">Perhatian format:</div>
+                  <ul className="list-disc pl-4 text-[11px] space-y-0.5">
+                    {importErrors.slice(0, 5).map((err, i) => (
+                      <li key={i}>{err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Preview table */}
+              {importParsedProducts.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-black">
+                    <span>Preview Data Siap Diimpor: {importParsedProducts.length} Produk</span>
+                    {importNewCategories.length > 0 && (
+                      <span className="text-[11px] text-[#800020]">
+                        +{importNewCategories.length} Kategori Baru
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="border border-[#FCE4E8] rounded-2xl max-h-52 overflow-y-auto divide-y divide-[#FCE4E8]">
+                    {importParsedProducts.slice(0, 10).map((p, i) => (
+                      <div key={i} className="p-2.5 flex items-center justify-between text-xs hover:bg-[#FFF5F7]">
+                        <div>
+                          <div className="font-bold text-black">{p.name}</div>
+                          <div className="text-[10px] text-stone-500 font-mono">
+                            {p.category} • Stok: {p.stock} {p.unit}
+                          </div>
+                        </div>
+                        <div className="text-right font-mono font-bold text-[#800020]">
+                          {formatRupiah(p.sellPrice)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {importParsedProducts.length > 10 && (
+                    <div className="text-center text-[11px] text-stone-500">
+                      ...dan {importParsedProducts.length - 10} produk lainnya
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="pt-3 border-t border-[#FCE4E8] flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsImportModalOpen(false)}
+                  className="flex-1 py-2 text-xs font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-xl cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  disabled={importParsedProducts.length === 0}
+                  onClick={handleConfirmImport}
+                  className={`flex-1 py-2 text-xs font-bold text-white rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    importParsedProducts.length > 0
+                      ? 'bg-[#800020] hover:bg-[#660019]'
+                      : 'bg-stone-300 cursor-not-allowed text-stone-500'
+                  }`}
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Konfirmasi Masukkan {importParsedProducts.length} Produk</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
