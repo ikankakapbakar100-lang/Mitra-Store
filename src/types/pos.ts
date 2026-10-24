@@ -89,6 +89,18 @@ export interface Customer {
   registeredAt: string;
 }
 
+export interface CustomerCartSession {
+  id: string;
+  name: string;           // Nama keranjang/pelanggan (e.g. "Pelanggan 1", "Ibu Rina", "Antrean 2")
+  createdAt: string;      // ISO String
+  updatedAt: string;      // ISO String
+  items: CartItem[];
+  selectedCustomer: Customer | null;
+  pointsToRedeem: number;
+  taxEnabled: boolean;
+  notes?: string;
+}
+
 export type ExpenseCategory = 
   | 'pembelian_stok'      // Pembelian Stok Barang / Supplier
   | 'kemasan_packaging'   // Kantong Plastik, Lakban, Bubble Wrap

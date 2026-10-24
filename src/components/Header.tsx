@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { NotificationDrawer } from './NotificationDrawer';
 import { CameraScannerModal } from './Camera/CameraScannerModal';
+import { formatRupiah } from '../utils/format';
 
 interface HeaderProps {
   appMode: 'pos' | 'management';
@@ -42,8 +43,16 @@ export const Header: React.FC<HeaderProps> = ({
     lowStockProducts,
     outOfStockProducts,
     currentShift,
-    addToCart
+    addToCart,
+    cart,
+    cartTotal,
+    activePosTab,
+    setActivePosTab,
+    activeCartSession,
+    cartSessions
   } = usePOS();
+
+  const totalCartCount = cart.reduce((acc, item) => acc + item.qty, 0);
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
@@ -161,13 +170,44 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Quick Camera Barcode Scanner (POS Mode) */}
             {appMode === 'pos' && (
-              <button
-                onClick={() => setIsCameraModalOpen(true)}
-                className="flex items-center gap-1.5 p-2 rounded-xl bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4] hover:bg-[#F8CCD4] transition-colors cursor-pointer"
-                title="Buka Kamera Barcode"
-              >
-                <Camera className="w-4 h-4" />
-              </button>
+              <>
+                <button
+                  onClick={() => setIsCameraModalOpen(true)}
+                  className="flex items-center gap-1.5 p-2 rounded-xl bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4] hover:bg-[#F8CCD4] transition-colors cursor-pointer"
+                  title="Buka Kamera Barcode"
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
+
+                {/* Tombol Halaman Khusus Keranjang di Header */}
+                <button
+                  onClick={() => setActivePosTab(activePosTab === 'cart' ? 'catalog' : 'cart')}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer relative ${
+                    activePosTab === 'cart'
+                      ? 'bg-[#800020] text-white border-[#800020] shadow-sm'
+                      : 'bg-[#FCE8EB] text-[#800020] border-[#F8CCD4] hover:bg-[#F8CCD4]'
+                  }`}
+                  title={`Buka Keranjang: ${activeCartSession.name} (${cartSessions.length} antrean pelanggan)`}
+                  aria-label="Keranjang Belanja"
+                >
+                  <div className="relative">
+                    <ShoppingCart className="w-4 h-4" />
+                    {totalCartCount > 0 && (
+                      <span className="absolute -top-1.5 -right-2 min-w-3.5 h-3.5 px-0.5 bg-white text-[#800020] border border-[#800020] rounded-full text-[8px] font-black flex items-center justify-center shadow-2xs">
+                        {totalCartCount > 99 ? '99+' : totalCartCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className="hidden md:inline font-mono">
+                    {activeCartSession.name}: {totalCartCount > 0 ? formatRupiah(cartTotal) : '0 item'}
+                  </span>
+                  {cartSessions.length > 1 && (
+                    <span className="hidden xl:inline text-[9px] px-1 py-0.2 rounded-full bg-white/20 font-mono font-bold">
+                      +{cartSessions.length - 1}
+                    </span>
+                  )}
+                </button>
+              </>
             )}
 
             {/* Shift Status (Saldo Laci) - Tampil di HP & Desktop */}

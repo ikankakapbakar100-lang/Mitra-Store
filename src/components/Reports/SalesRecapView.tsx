@@ -42,6 +42,7 @@ import {
   MoreHorizontal,
   Tag,
   Sparkles,
+  Info,
 } from 'lucide-react';
 import { CashExpenseModal } from '../POS/CashExpenseModal';
 

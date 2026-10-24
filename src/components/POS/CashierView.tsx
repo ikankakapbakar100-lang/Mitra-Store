@@ -28,6 +28,8 @@ import { PaymentModal } from './PaymentModal';
 import { ReceiptModal } from './ReceiptModal';
 import { CashExpenseModal } from './CashExpenseModal';
 import { CameraScannerModal } from '../Camera/CameraScannerModal';
+import { CartView } from './CartView';
+import { MultiCartBar } from './MultiCartBar';
 
 export const CashierView: React.FC = () => {
   const {
@@ -55,6 +57,10 @@ export const CashierView: React.FC = () => {
     isExpenseModalOpen,
     setIsExpenseModalOpen,
     expenses,
+    activePosTab,
+    setActivePosTab,
+    activeCartSession,
+    cartSessions,
   } = usePOS();
 
   const todayExpenseTotal = useMemo(() => {
@@ -134,8 +140,81 @@ export const CashierView: React.FC = () => {
     setIsConfirmingClearCart(false);
   };
 
+  // 1. JIKA MODE TAB KERANJANG AKTIF: TAMPILKAN HALAMAN KHUSUS KERANJANG BELANJA (TIDAK DI BAWAH)
+  if (activePosTab === 'cart') {
+    return (
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-2.5 sm:py-5 text-black">
+        {/* Tab Navigasi Atas: Mudah Beralih Antara Katalog & Keranjang */}
+        <div className="max-w-4xl mx-auto mb-3 bg-white p-1 rounded-2xl border border-[#FCE4E8] shadow-2xs flex items-center gap-1 sm:gap-2">
+          <button
+            type="button"
+            onClick={() => setActivePosTab('catalog')}
+            className="flex-1 py-2 sm:py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer text-stone-700 hover:text-black hover:bg-[#FCE8EB]"
+          >
+            <Package className="w-4 h-4 text-stone-500" />
+            <span>Katalog Produk</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActivePosTab('cart')}
+            className="flex-1 py-2 sm:py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer bg-[#800020] text-white shadow-2xs"
+          >
+            <ShoppingCart className="w-4 h-4 text-white" />
+            <span>Keranjang ({activeCartSession.name})</span>
+            {totalCartCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white text-[#800020]">
+                {totalCartCount} item • {formatRupiah(cartTotal)}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Halaman Khusus Keranjang Belanja */}
+        <CartView onBackToCatalog={() => setActivePosTab('catalog')} />
+
+        {/* Printable Receipt Modal */}
+        {isReceiptModalOpen && (
+          <ReceiptModal
+            isOpen={isReceiptModalOpen}
+            onClose={() => setIsReceiptModalOpen(false)}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-2.5 sm:py-5 text-black">
+      
+      {/* Tab Navigasi Atas: Mudah Beralih Antara Katalog & Keranjang */}
+      <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-2.5 bg-white p-1 rounded-2xl border border-[#FCE4E8] shadow-2xs">
+        <button
+          type="button"
+          onClick={() => setActivePosTab('catalog')}
+          className="flex-1 py-2 sm:py-2.5 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer bg-[#800020] text-white shadow-2xs"
+        >
+          <Package className="w-4 h-4 text-white" />
+          <span>Katalog Produk</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActivePosTab('cart')}
+          className="flex-1 py-2 sm:py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer text-stone-700 hover:text-black hover:bg-[#FCE8EB] relative"
+        >
+          <ShoppingCart className="w-4 h-4 text-stone-600" />
+          <span>Keranjang ({activeCartSession.name})</span>
+          {totalCartCount > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#800020] text-white">
+              {totalCartCount} item • {formatRupiah(cartTotal)}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Bar Antrean Multi-Pelanggan (Bisa Simpan Keranjang Banyak Orang Sekaligus) */}
+      <MultiCartBar compact />
+
       <div className={`grid grid-cols-1 ${isCartOpen ? 'lg:grid-cols-12' : 'grid-cols-1'} gap-3 sm:gap-5 items-start`}>
         
         {/* Kolom Katalog Produk */}
@@ -216,13 +295,19 @@ export const CashierView: React.FC = () => {
 
               {/* FITUR KHUSUS ICON KERANJANG */}
               <button
-                onClick={() => setIsCartOpen(!isCartOpen)}
+                onClick={() => {
+                  if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                    setActivePosTab('cart');
+                  } else {
+                    setIsCartOpen(!isCartOpen);
+                  }
+                }}
                 className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl font-bold text-xs transition-all flex items-center gap-1.5 sm:gap-2 shadow-sm cursor-pointer shrink-0 ${
                   isCartOpen
                     ? 'bg-black text-white hover:bg-stone-900'
                     : 'bg-[#800020] hover:bg-[#660019] text-white shadow-rose-950/20 active:scale-95'
                 }`}
-                title={isCartOpen ? 'Tutup Keranjang (Perluas Tampilan Produk)' : 'Buka Keranjang Kasir'}
+                title={isCartOpen ? 'Tutup Panel Keranjang' : 'Buka Halaman / Panel Keranjang'}
               >
                 <div className="relative">
                   <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -401,9 +486,9 @@ export const CashierView: React.FC = () => {
           )}
         </div>
 
-        {/* Kolom Keranjang Kasir */}
+        {/* Kolom Keranjang Kasir (Khusus Layar Desktop lg+, di HP menggunakan Halaman Khusus) */}
         {isCartOpen && (
-          <div className="lg:col-span-5 xl:col-span-4 sticky top-20 animate-in fade-in zoom-in-95 duration-150">
+          <div className="hidden lg:block lg:col-span-5 xl:col-span-4 sticky top-20 animate-in fade-in zoom-in-95 duration-150">
             <div className="bg-white rounded-3xl border border-[#FCE4E8] shadow-xl overflow-hidden flex flex-col">
               
               {/* Header Keranjang dengan Tombol Tutup (X) */}
@@ -423,6 +508,15 @@ export const CashierView: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-1.5">
+                  {/* Buka Layar Penuh Dedicated */}
+                  <button
+                    onClick={() => setActivePosTab('cart')}
+                    className="px-2 py-1 rounded-xl text-stone-700 hover:text-[#800020] hover:bg-[#FCE8EB] text-[10px] font-bold border border-[#FCE4E8] transition-colors cursor-pointer"
+                    title="Buka Halaman Khusus Keranjang Belanja"
+                  >
+                    Layar Penuh
+                  </button>
+
                   {cart.length > 0 && (
                     isConfirmingClearCart ? (
                       <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-rose-300">
@@ -700,19 +794,67 @@ export const CashierView: React.FC = () => {
         )}
       </div>
 
-      {/* FLOATING ACTION PILL */}
-      {!isCartOpen && cart.length > 0 && (
-        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-30 max-w-md w-11/12 bg-black/95 backdrop-blur-md text-white rounded-2xl p-2.5 px-3.5 shadow-2xl flex items-center justify-between border border-[#800020]/60 animate-in fade-in slide-in-from-bottom-3 duration-200">
+      {/* FLOATING ACTION PILL UNTUK HP & DESKTOP (AKSES LANGSUNG KE HALAMAN KERANJANG) */}
+      {/* 1. Mobile Pill: Selalu muncul jika ada isi keranjang saat browsing katalog */}
+      {cart.length > 0 && (
+        <div className="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-30 max-w-md w-[92%] bg-black/95 backdrop-blur-md text-white rounded-2xl p-2.5 px-3.5 shadow-2xl flex items-center justify-between border border-[#800020]/60 animate-in fade-in slide-in-from-bottom-3 duration-200">
           <div 
-            onClick={() => setIsCartOpen(true)}
+            onClick={() => setActivePosTab('cart')}
+            className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0"
+          >
+            <div className="w-8 h-8 rounded-xl bg-[#800020] flex items-center justify-center font-bold text-xs shadow-xs text-white shrink-0">
+              <ShoppingCart className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-bold truncate flex items-center gap-1.5">
+                <span>{activeCartSession.name} ({totalCartCount} item)</span>
+                {cartSessions.length > 1 && (
+                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-white/20 text-pink-100 font-bold shrink-0">
+                    {cartSessions.length} Antrean
+                  </span>
+                )}
+              </div>
+              <div className="text-xs font-black font-mono text-[#FCE8EB]">
+                {formatRupiah(cartTotal)}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setActivePosTab('cart')}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#800020] hover:bg-[#660019] text-white transition-colors shadow-xs cursor-pointer active:scale-95"
+            >
+              Lihat Keranjang
+            </button>
+            <button
+              onClick={() => setIsPaymentModalOpen(true)}
+              className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white text-black hover:bg-stone-200 transition-colors shadow-xs cursor-pointer"
+            >
+              Bayar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Desktop Pill: Muncul jika panel samping ditutup dan ada item di keranjang */}
+      {!isCartOpen && cart.length > 0 && (
+        <div className="hidden lg:flex fixed bottom-5 left-1/2 -translate-x-1/2 z-30 max-w-md w-11/12 bg-black/95 backdrop-blur-md text-white rounded-2xl p-2.5 px-3.5 shadow-2xl items-center justify-between border border-[#800020]/60 animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <div 
+            onClick={() => setActivePosTab('cart')}
             className="flex items-center gap-2.5 cursor-pointer"
           >
             <div className="w-8 h-8 rounded-xl bg-[#800020] flex items-center justify-center font-bold text-xs shadow-xs text-white">
               <ShoppingCart className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-bold">
-                {totalCartCount} Item di Keranjang
+              <div className="text-xs font-bold flex items-center gap-1.5">
+                <span>{activeCartSession.name} ({totalCartCount} item)</span>
+                {cartSessions.length > 1 && (
+                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-white/20 text-pink-100 font-bold">
+                    {cartSessions.length} Antrean
+                  </span>
+                )}
               </div>
               <div className="text-xs font-black font-mono text-[#FCE8EB]">
                 {formatRupiah(cartTotal)}
@@ -722,7 +864,7 @@ export const CashierView: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setIsCartOpen(true)}
+              onClick={() => setActivePosTab('cart')}
               className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
             >
               Buka Keranjang

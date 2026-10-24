@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Product,
   CartItem,
@@ -20,6 +20,7 @@ import {
   DailyCashRecord,
   CashExpense,
   ExpenseCategory,
+  CustomerCartSession,
 } from '../types/pos';
 import {
   INITIAL_PRODUCTS,
@@ -47,7 +48,7 @@ interface POSContextType {
   lowStockProducts: Product[];
   outOfStockProducts: Product[];
 
-  // Cart
+  // Cart (Aktif)
   cart: CartItem[];
   addToCart: (product: Product, qty?: number) => void;
   updateCartQty: (productId: string, qty: number) => void;
@@ -63,6 +64,19 @@ interface POSContextType {
   pointsDiscountValue: number;
   taxEnabled: boolean;
   setTaxEnabled: (enabled: boolean) => void;
+
+  // Multi-Customer Cart Sessions (Simpan & Antrean Banyak Keranjang Pelanggan Bersamaan)
+  cartSessions: CustomerCartSession[];
+  activeCartSessionId: string;
+  activeCartSession: CustomerCartSession;
+  setActiveCartSessionId: (id: string) => void;
+  createNewCartSession: (name?: string) => string;
+  deleteCartSession: (id: string) => void;
+  renameCartSession: (id: string, newName: string) => void;
+
+  // POS View Mode (Dedicated Cart or Catalog)
+  activePosTab: 'catalog' | 'cart';
+  setActivePosTab: (tab: 'catalog' | 'cart') => void;
 
   // Checkout & Transactions
   transactions: Transaction[];
@@ -159,6 +173,8 @@ const STORAGE_KEYS = {
   CASHIER_LOGGED: 'kasir_shopee_logged_in_v1',
   CATEGORIES: 'kasir_shopee_categories_v2',
   CART: 'kasir_shopee_cart_draft_v2',
+  CART_SESSIONS: 'kasir_shopee_cart_sessions_v3',
+  ACTIVE_CART_ID: 'kasir_shopee_active_cart_id_v3',
   EXPENSES: 'kasir_shopee_expenses_v2',
 };
 
@@ -364,28 +380,135 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(expenses));
   }, [expenses]);
 
-  // Cart with Persistence (Prevents accidental data loss when exiting POS or reloading)
-  const [cart, setCart] = useState<CartItem[]>(() => {
+  // Multi-Customer Cart Sessions (Penyimpanan Banyak Keranjang Pelanggan Bersamaan)
+  const createInitialCartSession = (id: string, name: string): CustomerCartSession => ({
+    id,
+    name,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    items: [],
+    selectedCustomer: null,
+    pointsToRedeem: 0,
+    taxEnabled: false,
+  });
+
+  const [cartSessions, setCartSessions] = useState<CustomerCartSession[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.CART);
-      return saved ? JSON.parse(saved) : [];
+      const saved = localStorage.getItem(STORAGE_KEYS.CART_SESSIONS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+      // Migration from legacy single cart if present
+      const legacyCartStr = localStorage.getItem(STORAGE_KEYS.CART);
+      const legacyCart = legacyCartStr ? JSON.parse(legacyCartStr) : [];
+      return [
+        {
+          id: 'cart-1',
+          name: 'Pelanggan 1',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          items: Array.isArray(legacyCart) ? legacyCart : [],
+          selectedCustomer: null,
+          pointsToRedeem: 0,
+          taxEnabled: false,
+        },
+      ];
     } catch {
-      return [];
+      return [createInitialCartSession('cart-1', 'Pelanggan 1')];
     }
   });
 
+  const [activeCartSessionId, setActiveCartSessionId] = useState<string>(() => {
+    try {
+      const savedId = localStorage.getItem(STORAGE_KEYS.ACTIVE_CART_ID);
+      return savedId || 'cart-1';
+    } catch {
+      return 'cart-1';
+    }
+  });
+
+  // Sync cart sessions to localStorage
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(cart));
-  }, [cart]);
+    localStorage.setItem(STORAGE_KEYS.CART_SESSIONS, JSON.stringify(cartSessions));
+    const current = cartSessions.find((s) => s.id === activeCartSessionId) || cartSessions[0];
+    if (current) {
+      localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(current.items));
+    }
+  }, [cartSessions, activeCartSessionId]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_CART_ID, activeCartSessionId);
+  }, [activeCartSessionId]);
+
+  // Active Cart Session (selalu valid)
+  const activeCartSession = useMemo(() => {
+    return (
+      cartSessions.find((s) => s.id === activeCartSessionId) ||
+      cartSessions[0] ||
+      createInitialCartSession('cart-1', 'Pelanggan 1')
+    );
+  }, [cartSessions, activeCartSessionId]);
+
+  // Derived state for the currently active customer's cart
+  const cart: CartItem[] = activeCartSession.items;
+  const selectedCustomer = activeCartSession.selectedCustomer;
+  const pointsToRedeem = activeCartSession.pointsToRedeem;
+  const taxEnabled = activeCartSession.taxEnabled;
+
+  const setSelectedCustomer = useCallback((customer: Customer | null) => {
+    setCartSessions((prev) =>
+      prev.map((s) =>
+        s.id === activeCartSessionId
+          ? {
+              ...s,
+              selectedCustomer: customer,
+              pointsToRedeem: 0,
+              updatedAt: new Date().toISOString(),
+            }
+          : s
+      )
+    );
+  }, [activeCartSessionId]);
+
+  const setPointsToRedeem = useCallback((points: number) => {
+    setCartSessions((prev) =>
+      prev.map((s) =>
+        s.id === activeCartSessionId
+          ? {
+              ...s,
+              pointsToRedeem: points,
+              updatedAt: new Date().toISOString(),
+            }
+          : s
+      )
+    );
+  }, [activeCartSessionId]);
+
+  const setTaxEnabled = useCallback((enabled: boolean) => {
+    setCartSessions((prev) =>
+      prev.map((s) =>
+        s.id === activeCartSessionId
+          ? {
+              ...s,
+              taxEnabled: enabled,
+              updatedAt: new Date().toISOString(),
+            }
+          : s
+      )
+    );
+  }, [activeCartSessionId]);
+
+  // Dedicated POS Tab Mode: 'catalog' | 'cart'
+  const [activePosTab, setActivePosTab] = useState<'catalog' | 'cart'>('catalog');
 
   // Cashier Login & Accountability
   const [isCashierLoggedIn, setIsCashierLoggedIn] = useState<boolean>(() => {
     return localStorage.getItem(STORAGE_KEYS.CASHIER_LOGGED) === 'true';
   });
 
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [pointsToRedeem, setPointsToRedeem] = useState<number>(0);
-  const [taxEnabled, setTaxEnabled] = useState<boolean>(false);
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState<boolean>(false);
 
@@ -491,53 +614,166 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications(prev => [newNotif, ...prev]);
   }, []);
 
-  const removeFromCart = useCallback((productId: string) => {
-    setCart(prev => prev.filter(item => item.product.id !== productId));
+  // Multi-Customer Session Actions
+  const createNewCartSession = useCallback((customName?: string): string => {
+    const newId = 'cart-' + Date.now();
+    let defaultIndex = cartSessions.length + 1;
+    while (cartSessions.some((s) => s.name === `Pelanggan ${defaultIndex}`)) {
+      defaultIndex++;
+    }
+    const name = customName?.trim() || `Pelanggan ${defaultIndex}`;
+    const newSession: CustomerCartSession = {
+      id: newId,
+      name,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      items: [],
+      selectedCustomer: null,
+      pointsToRedeem: 0,
+      taxEnabled: false,
+    };
+    setCartSessions((prev) => [...prev, newSession]);
+    setActiveCartSessionId(newId);
+    addNotification('Keranjang Baru Dibuka', `Keranjang untuk "${name}" siap digunakan.`, 'system');
+    return newId;
+  }, [cartSessions, addNotification]);
+
+  const deleteCartSession = useCallback((id: string) => {
+    setCartSessions((prev) => {
+      if (prev.length <= 1) {
+        // Reset the only cart
+        return [
+          {
+            id: prev[0].id,
+            name: 'Pelanggan 1',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            items: [],
+            selectedCustomer: null,
+            pointsToRedeem: 0,
+            taxEnabled: false,
+          },
+        ];
+      }
+      const filtered = prev.filter((s) => s.id !== id);
+      if (activeCartSessionId === id && filtered.length > 0) {
+        setActiveCartSessionId(filtered[0].id);
+      }
+      return filtered;
+    });
+    addNotification('Keranjang Dihapus', 'Keranjang pelanggan telah dihapus.', 'system');
+  }, [activeCartSessionId, addNotification]);
+
+  const renameCartSession = useCallback((id: string, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    setCartSessions((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, name: trimmed, updatedAt: new Date().toISOString() } : s
+      )
+    );
   }, []);
+
+  const removeFromCart = useCallback((productId: string) => {
+    setCartSessions((prev) =>
+      prev.map((s) =>
+        s.id === activeCartSessionId
+          ? {
+              ...s,
+              items: s.items.filter((item) => item.product.id !== productId),
+              updatedAt: new Date().toISOString(),
+            }
+          : s
+      )
+    );
+  }, [activeCartSessionId]);
 
   const clearCart = useCallback(() => {
-    setCart([]);
-    localStorage.removeItem(STORAGE_KEYS.CART);
-    setSelectedCustomer(null);
-    setPointsToRedeem(0);
-  }, []);
+    setCartSessions((prev) =>
+      prev.map((s) =>
+        s.id === activeCartSessionId
+          ? {
+              ...s,
+              items: [],
+              selectedCustomer: null,
+              pointsToRedeem: 0,
+              taxEnabled: false,
+              updatedAt: new Date().toISOString(),
+            }
+          : s
+      )
+    );
+  }, [activeCartSessionId]);
 
-  // Cart actions
+  // Cart actions applied to active customer's cart
   const addToCart = useCallback((product: Product, qty: number = 1) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.product.id === product.id);
+    setCartSessions((prev) => {
+      const currentSession = prev.find((s) => s.id === activeCartSessionId) || prev[0];
+      if (!currentSession) return prev;
+
+      const existing = currentSession.items.find((item) => item.product.id === product.id);
+      let updatedItems: CartItem[];
+
       if (existing) {
         const newQty = existing.qty + qty;
         if (newQty > product.stock) {
           addNotification('Stok Tidak Mencukupi', `Sisa stok ${product.name} hanya ${product.stock} ${product.unit}.`, 'stock_alert');
           return prev;
         }
-        return prev.map(item => item.product.id === product.id ? { ...item, qty: newQty } : item);
+        updatedItems = currentSession.items.map((item) =>
+          item.product.id === product.id ? { ...item, qty: newQty } : item
+        );
       } else {
         if (qty > product.stock) {
           addNotification('Stok Tidak Mencukupi', `Sisa stok ${product.name} hanya ${product.stock} ${product.unit}.`, 'stock_alert');
           return prev;
         }
-        return [...prev, { product, qty }];
+        updatedItems = [...currentSession.items, { product, qty }];
       }
+
+      return prev.map((s) =>
+        s.id === currentSession.id
+          ? {
+              ...s,
+              items: updatedItems,
+              updatedAt: new Date().toISOString(),
+            }
+          : s
+      );
     });
-  }, [addNotification]);
+  }, [activeCartSessionId, addNotification]);
 
   const updateCartQty = useCallback((productId: string, qty: number) => {
     if (qty <= 0) {
       removeFromCart(productId);
       return;
     }
-    setCart(prev => {
-      const target = prev.find(i => i.product.id === productId);
+    setCartSessions((prev) => {
+      const currentSession = prev.find((s) => s.id === activeCartSessionId) || prev[0];
+      if (!currentSession) return prev;
+
+      const target = currentSession.items.find((i) => i.product.id === productId);
       if (!target) return prev;
+
       if (qty > target.product.stock) {
         addNotification('Batas Stok Maksimal', `Stok maksimal untuk ${target.product.name} adalah ${target.product.stock} ${target.product.unit}`, 'stock_alert');
         return prev;
       }
-      return prev.map(item => item.product.id === productId ? { ...item, qty } : item);
+
+      const updatedItems = currentSession.items.map((item) =>
+        item.product.id === productId ? { ...item, qty } : item
+      );
+      return prev.map((s) =>
+        s.id === currentSession.id
+          ? {
+              ...s,
+              items: updatedItems,
+              updatedAt: new Date().toISOString(),
+            }
+          : s
+      );
     });
-  }, [removeFromCart, addNotification]);
+  }, [activeCartSessionId, removeFromCart, addNotification]);
 
   // Process Checkout
   const processCheckout = async (
@@ -724,7 +960,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteProduct = (id: string) => {
     const target = products.find(p => p.id === id);
     setProducts(prev => prev.filter(p => p.id !== id));
-    setCart(prev => prev.filter(item => item.product.id !== id));
+    setCartSessions(prev =>
+      prev.map(s => ({ ...s, items: s.items.filter(item => item.product.id !== id) }))
+    );
     addNotification('Produk Dihapus', `Produk "${target?.name || 'Barang'}" berhasil dihapus dari inventaris stok.`, 'system');
   };
 
@@ -1302,7 +1540,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setStoreProfile(INITIAL_STORE_PROFILE);
     setShopeeConfig(INITIAL_SHOPEE_CONFIG);
     setCategories(INITIAL_CATEGORIES);
-    setCart([]);
+    setCartSessions([createInitialCartSession('cart-1', 'Pelanggan 1')]);
+    setActiveCartSessionId('cart-1');
     addNotification('Data Berhasil Direset', 'Semua data transaksi dan produk telah dikembalikan ke data awal sampel toko.', 'system');
   };
 
@@ -1358,6 +1597,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         pointsDiscountValue,
         taxEnabled,
         setTaxEnabled,
+        cartSessions,
+        activeCartSessionId,
+        activeCartSession,
+        setActiveCartSessionId,
+        createNewCartSession,
+        deleteCartSession,
+        renameCartSession,
+        activePosTab,
+        setActivePosTab,
         transactions,
         processCheckout,
         lastTransaction,
