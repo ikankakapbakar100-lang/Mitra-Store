@@ -27,7 +27,8 @@ import {
   FileSpreadsheet,
   Upload,
   ShieldCheck,
-  Download
+  Download,
+  Volume2
 } from 'lucide-react';
 import { CameraScannerModal } from '../Camera/CameraScannerModal';
 import { parseProductsFromCSV } from '../../utils/dataExportImport';
@@ -48,6 +49,8 @@ export const InventoryView: React.FC = () => {
     exportAllProductsCSV,
     bulkImportProducts,
     isStoragePersisted,
+    setIsVoiceSettingsModalOpen,
+    voiceSettings,
   } = usePOS();
 
   // Search & Filter state
@@ -193,7 +196,7 @@ export const InventoryView: React.FC = () => {
     e.preventDefault();
     setFormError('');
     if (!formName.trim()) {
-      setFormError('Nama produk wajib diisi!');
+      setFormError('Nama produk wajib diisi.');
       return;
     }
 
@@ -367,6 +370,40 @@ export const InventoryView: React.FC = () => {
           </div>
         </button>
       </div>
+
+      {/* Voice Notification Banner for Owner */}
+      {(lowStockCount > 0 || outOfStockCount > 0) && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-2xl bg-[#FFF5F7] border border-[#F8CCD4]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-[#800020] text-white flex items-center justify-center shrink-0 shadow-2xs">
+              <Volume2 className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-black flex items-center gap-2">
+                <span>Notifikasi Suara Stok Otomatis</span>
+                <span className={`text-[9px] px-2 py-0.2 rounded-full font-bold ${
+                  voiceSettings.enabled ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-200 text-stone-600'
+                }`}>
+                  {voiceSettings.enabled ? 'Aktif' : 'Nonaktif'}
+                </span>
+              </div>
+              <div className="text-[11px] text-stone-600">
+                {outOfStockCount > 0 ? `${outOfStockCount} produk stok habis. ` : ''}
+                {lowStockCount > 0 ? `${lowStockCount} produk stok menipis.` : ''} Owner bisa atur kalimat suara peringatan sesuai keinginan.
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsVoiceSettingsModalOpen(true)}
+            className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#800020] hover:text-white text-[#800020] border border-[#F8CCD4] text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer shrink-0"
+          >
+            <Volume2 className="w-3.5 h-3.5" />
+            <span>Atur Suara &amp; Uji Coba</span>
+          </button>
+        </div>
+      )}
 
       {/* 2. SEARCH & KATEGORI BAR (TAMBAH & HAPUS KATEGORI) */}
       <div className="bg-white p-3.5 rounded-3xl border border-[#FCE4E8] shadow-2xs space-y-3">

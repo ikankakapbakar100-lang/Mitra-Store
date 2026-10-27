@@ -21,7 +21,12 @@ import {
   CashExpense,
   ExpenseCategory,
   CustomerCartSession,
+  VoiceAlertSettings,
 } from '../types/pos';
+import {
+  DEFAULT_VOICE_SETTINGS,
+  playStockVoiceAlert,
+} from '../utils/voiceAlert';
 import {
   INITIAL_PRODUCTS,
   INITIAL_STAFF,
@@ -179,6 +184,13 @@ interface POSContextType {
   // Theme
   isDarkMode: boolean;
   toggleDarkMode: () => void;
+
+  // Custom Voice & Sound Alerts for Owner (Stok Menipis & Habis)
+  voiceSettings: VoiceAlertSettings;
+  updateVoiceSettings: (updates: Partial<VoiceAlertSettings>) => void;
+  testVoiceAlert: (type: 'low_stock' | 'out_of_stock') => void;
+  isVoiceSettingsModalOpen: boolean;
+  setIsVoiceSettingsModalOpen: (open: boolean) => void;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -199,6 +211,7 @@ const STORAGE_KEYS = {
   CART_SESSIONS: 'kasir_shopee_cart_sessions_v3',
   ACTIVE_CART_ID: 'kasir_shopee_active_cart_id_v3',
   EXPENSES: 'kasir_shopee_expenses_v2',
+  VOICE_SETTINGS: 'mitrastore_voice_settings_v1',
 };
 
 export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -565,6 +578,48 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       read: true,
     },
   ]);
+
+  // Voice Alert Settings for Owner (Stok Menipis & Habis)
+  const [voiceSettings, setVoiceSettings] = useState<VoiceAlertSettings>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.VOICE_SETTINGS);
+      return saved ? { ...DEFAULT_VOICE_SETTINGS, ...JSON.parse(saved) } : DEFAULT_VOICE_SETTINGS;
+    } catch {
+      return DEFAULT_VOICE_SETTINGS;
+    }
+  });
+
+  const [isVoiceSettingsModalOpen, setIsVoiceSettingsModalOpen] = useState<boolean>(false);
+
+  const updateVoiceSettings = useCallback((updates: Partial<VoiceAlertSettings>) => {
+    setVoiceSettings((prev) => {
+      const updated = { ...prev, ...updates };
+      try {
+        localStorage.setItem(STORAGE_KEYS.VOICE_SETTINGS, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  }, []);
+
+  const testVoiceAlert = useCallback((type: 'low_stock' | 'out_of_stock') => {
+    if (type === 'out_of_stock') {
+      playStockVoiceAlert(
+        'out_of_stock',
+        'Loyang Kue Brownies 20x10',
+        0,
+        'buah',
+        voiceSettings
+      );
+    } else {
+      playStockVoiceAlert(
+        'low_stock',
+        'Cetakan Kue Pukis 12 Lubang',
+        2,
+        'set',
+        voiceSettings
+      );
+    }
+  }, [voiceSettings]);
 
   // Cloud Backup Meta
   const [cloudBackup, setCloudBackup] = useState<CloudBackupMeta>({
@@ -982,7 +1037,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       newlyLowOrOutStock.forEach(item => {
         if (item.stock === 0) {
           addNotification(
-            'Stok Habis!',
+            'Stok Habis',
             `Produk "${item.name}" telah habis setelah transaksi ${newTransaction.invoiceNo}.`,
             'stock_alert'
           );
@@ -994,6 +1049,23 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           );
         }
       });
+
+      // Voice alert otomatis (Suara Notifikasi Pemilik Toko)
+      if (voiceSettings.enabled && voiceSettings.autoSpeakOnCheckout) {
+        const outTarget = newlyLowOrOutStock.find(i => i.stock === 0);
+        const alertTarget = outTarget || newlyLowOrOutStock[0];
+        if (alertTarget) {
+          setTimeout(() => {
+            playStockVoiceAlert(
+              alertTarget.stock === 0 ? 'out_of_stock' : 'low_stock',
+              alertTarget.name,
+              alertTarget.stock,
+              alertTarget.unit,
+              voiceSettings
+            );
+          }, 600);
+        }
+      }
     }
 
     // 6. Real-time Cloud Auto-Backup Trigger
@@ -1069,6 +1141,21 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       `Stok "${prod?.name || 'Produk'}" disesuaikan ${quantityDelta >= 0 ? '+' : ''}${quantityDelta}. Alasan: ${reason}`,
       'system'
     );
+
+    if (prod && quantityDelta < 0) {
+      const remaining = Math.max(0, prod.stock + quantityDelta);
+      if (remaining <= prod.minStock && voiceSettings.enabled) {
+        setTimeout(() => {
+          playStockVoiceAlert(
+            remaining === 0 ? 'out_of_stock' : 'low_stock',
+            prod.name,
+            remaining,
+            prod.unit,
+            voiceSettings
+          );
+        }, 300);
+      }
+    }
   };
 
   // Customer CRUD
@@ -1532,7 +1619,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setShopeeLogs(prev => [log, ...prev]);
 
     addNotification(
-      'Pesanan Shopee Baru!',
+      'Pesanan Shopee Baru',
       `Order #${shopeeOrderId} diterima (${orderQty}x ${randomProduct.name}). Stok toko fisik telah disinkronkan.`,
       'shopee_order'
     );
@@ -1604,7 +1691,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (decryptedData.shopeeConfig) setShopeeConfig(decryptedData.shopeeConfig);
 
       addNotification('Pemulihan Data Berhasil', 'Database berhasil didekripsi dan dipulihkan sepenuhnya.', 'backup');
-      return { success: true, message: 'Data berhasil dipulihkan dengan verifikasi integritas SHA-256!' };
+      return { success: true, message: 'Data berhasil dipulihkan dengan verifikasi integritas SHA-256.' };
     } catch (err) {
       return {
         success: false,
@@ -1876,6 +1963,11 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         printTransactionReceipt,
         isDarkMode,
         toggleDarkMode,
+        voiceSettings,
+        updateVoiceSettings,
+        testVoiceAlert,
+        isVoiceSettingsModalOpen,
+        setIsVoiceSettingsModalOpen,
       }}
     >
       {children}

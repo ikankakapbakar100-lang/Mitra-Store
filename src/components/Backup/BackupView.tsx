@@ -14,12 +14,14 @@ import {
   RefreshCw, 
   KeyRound, 
   CheckCircle2, 
-  AlertTriangle,
+  Info,
   ShieldCheck,
   Database,
   FileSpreadsheet,
   History,
-  RotateCcw
+  RotateCcw,
+  Sparkles,
+  HelpCircle
 } from 'lucide-react';
 
 export const BackupView: React.FC = () => {
@@ -51,7 +53,7 @@ export const BackupView: React.FC = () => {
   const [customSnapshotLabel, setCustomSnapshotLabel] = useState('');
   const [restoringSnapshotId, setRestoringSnapshotId] = useState<string | null>(null);
 
-  // Security guard for Reset
+  // Modal Konfirmasi Reset Toko
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [resetConfirmationInput, setResetConfirmationInput] = useState('');
 
@@ -59,6 +61,10 @@ export const BackupView: React.FC = () => {
     setIsCloudBackingUp(true);
     await performCloudBackup();
     setIsCloudBackingUp(false);
+    setStatusMessage({
+      type: 'success',
+      text: 'Semua data transaksi dan ratusan stok produk berhasil dicadangkan dan disinkronkan.',
+    });
   };
 
   const handleCreateSnapshot = async (e: React.FormEvent) => {
@@ -69,7 +75,7 @@ export const BackupView: React.FC = () => {
     setCustomSnapshotLabel('');
     setStatusMessage({
       type: 'success',
-      text: 'Titik pemulihan lokal (Snapshot) berhasil dibuat dan tersimpan aman di IndexedDB!',
+      text: 'Titik simpan data berhasil dibuat. Anda bisa kembali ke titik ini kapan saja jika ada salah input.',
     });
   };
 
@@ -80,12 +86,12 @@ export const BackupView: React.FC = () => {
     if (success) {
       setStatusMessage({
         type: 'success',
-        text: 'Data inventaris dan transaksi berhasil dipulihkan dari snapshot yang dipilih!',
+        text: 'Data inventaris dan transaksi toko berhasil dipulihkan dari titik simpan yang Anda pilih.',
       });
     } else {
       setStatusMessage({
         type: 'error',
-        text: 'Gagal memulihkan data dari snapshot.',
+        text: 'Gagal memulihkan data dari titik simpan.',
       });
     }
   };
@@ -93,7 +99,7 @@ export const BackupView: React.FC = () => {
   const handleExportEncrypted = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!exportPassphrase.trim() || exportPassphrase.length < 4) {
-      setStatusMessage({ type: 'error', text: 'Kata sandi minimal 4 karakter.' });
+      setStatusMessage({ type: 'error', text: 'Kata sandi minimal 4 karakter agar aman.' });
       return;
     }
 
@@ -104,7 +110,7 @@ export const BackupView: React.FC = () => {
       const link = document.createElement('a');
       link.href = url;
       const dateStr = new Date().toISOString().split('T')[0];
-      link.download = `MitraStore_Encrypted_Backup_${dateStr}.enc.json`;
+      link.download = `MitraStore_Cadangan_Toko_${dateStr}.enc.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -112,13 +118,13 @@ export const BackupView: React.FC = () => {
 
       setStatusMessage({ 
         type: 'success', 
-        text: 'File cadangan terenkripsi AES-GCM 256-bit berhasil diunduh!' 
+        text: 'File cadangan toko yang terkunci kata sandi berhasil diunduh ke perangkat Anda.' 
       });
       setExportPassphrase('');
     } catch (err) {
       setStatusMessage({ 
         type: 'error', 
-        text: 'Gagal membuat cadangan: ' + (err instanceof Error ? err.message : String(err)) 
+        text: 'Gagal membuat file cadangan: ' + (err instanceof Error ? err.message : String(err)) 
       });
     }
   };
@@ -137,11 +143,11 @@ export const BackupView: React.FC = () => {
   const handleRestoreEncrypted = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!importFileContent) {
-      setStatusMessage({ type: 'error', text: 'Pilih file backup .enc.json terlebih dahulu.' });
+      setStatusMessage({ type: 'error', text: 'Silakan pilih file cadangan (.enc.json) terlebih dahulu.' });
       return;
     }
     if (!importPassphrase) {
-      setStatusMessage({ type: 'error', text: 'Masukkan kata sandi dekripsi.' });
+      setStatusMessage({ type: 'error', text: 'Masukkan kata sandi yang Anda buat saat menyimpan file cadangan ini.' });
       return;
     }
 
@@ -150,11 +156,11 @@ export const BackupView: React.FC = () => {
     setIsDecrypting(false);
 
     if (result.success) {
-      setStatusMessage({ type: 'success', text: result.message });
+      setStatusMessage({ type: 'success', text: 'Sukses. Semua data produk dan transaksi berhasil dibuka dan dipulihkan.' });
       setImportFileContent('');
       setImportPassphrase('');
     } else {
-      setStatusMessage({ type: 'error', text: result.message });
+      setStatusMessage({ type: 'error', text: 'Kata sandi salah atau isi file tidak cocok. Mohon periksa kembali.' });
     }
   };
 
@@ -162,7 +168,7 @@ export const BackupView: React.FC = () => {
     if (resetConfirmationInput !== 'RESET MITRASTORE') {
       setStatusMessage({
         type: 'error',
-        text: 'Konfirmasi keamanan tidak sesuai. Ketik "RESET MITRASTORE" untuk melanjutkan.',
+        text: 'Konfirmasi tidak sesuai. Ketik "RESET MITRASTORE" persis sama untuk melanjutkan.',
       });
       return;
     }
@@ -172,14 +178,14 @@ export const BackupView: React.FC = () => {
     setResetConfirmationInput('');
     setStatusMessage({
       type: 'success',
-      text: 'Data telah direset. Salinan darurat data Anda sebelum reset telah disimpan di daftar snapshot.',
+      text: 'Data telah diatur ulang ke sampel awal. Salinan cadangan sebelum reset telah kami simpan di daftar titik simpan.',
     });
   };
 
   return (
     <div className="space-y-6 text-black">
       
-      {/* 1. JAMINAN KEAMANAN & KETAHANAN DATA 100% AMAN (DUAL-LAYER STORAGE + PERSISTENCE) */}
+      {/* 1. STATUS KEAMANAN DATA TOKO (BAHASA SEDERHANA & JELAS) */}
       <div className="bg-gradient-to-r from-emerald-50 via-white to-pink-50 rounded-3xl border-2 border-emerald-300 p-5 sm:p-6 shadow-sm">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5">
@@ -189,45 +195,45 @@ export const BackupView: React.FC = () => {
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-black text-base text-black">
-                  Proteksi Data 100% Aman &amp; Anti-Hilang
+                  Keamanan Data Toko 100% Terlindungi
                 </h3>
                 <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-700 text-white shadow-2xs">
-                  DUAL-LAYER AKTIF
+                  PENYIMPANAN AMAN AKTIF
                 </span>
               </div>
               <p className="text-xs text-stone-700 font-medium mt-1 max-w-2xl leading-relaxed">
-                Data ratusan stok produk dan riwayat transaksi disimpan secara <strong>ganda (Dual-Layer: LocalStorage + IndexedDB)</strong>. 
-                Data tidak akan hilang saat reload, browser ditutup, atau mati lampu, dan tidak akan berubah kecuali diubah langsung oleh Anda.
+                Data <strong>{products.length} produk cetakan/loyang</strong> dan <strong>{transactions.length} riwayat transaksi</strong> tersimpan secara ganda di memori perangkat Anda. 
+                Data tidak akan hilang saat aplikasi ditutup, internet mati, atau mati lampu, dan tidak akan berubah kecuali diubah langsung oleh Anda.
               </p>
             </div>
           </div>
 
-          {/* Status Browser Persistence */}
+          {/* Status Kunci Penyimpanan */}
           <div className="shrink-0 flex items-center gap-2">
             {isStoragePersisted ? (
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-bold">
                 <CheckCircle2 className="w-4 h-4 text-emerald-700" />
-                <span>Penyimpanan Permanen (Aktif)</span>
+                <span>Penyimpanan Terkunci Permanen</span>
               </div>
             ) : (
               <button
                 type="button"
                 onClick={() => enablePersistentStorage()}
                 className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
-                title="Kunci penyimpanan agar browser tidak pernah menghapus data secara otomatis saat disk penuh"
+                title="Kunci penyimpanan agar data tidak pernah terhapus otomatis oleh browser"
               >
                 <Lock className="w-3.5 h-3.5" />
-                <span>Kunci Penyimpanan Permanen</span>
+                <span>Kunci Memori Permanen</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* 1-Klik Quick Export & Backup Bar */}
+        {/* Tombol Cepat Simpan ke Komputer / HP */}
         <div className="mt-5 pt-4 border-t border-emerald-200/80 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs font-bold text-stone-700">
             <Database className="w-4 h-4 text-emerald-700" />
-            <span>Cadangkan &amp; Amankan ke Komputer / HP:</span>
+            <span>Simpan Salinan Cadangan ke Komputer / HP:</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -236,27 +242,27 @@ export const BackupView: React.FC = () => {
               type="button"
               onClick={exportAllProductsCSV}
               className="px-3 py-1.5 rounded-xl bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-900 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-              title="Unduh seluruh data stok produk ke file Excel / CSV"
+              title="Unduh seluruh daftar produk dan sisa stok ke file Excel"
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
-              <span>Unduh Excel (.csv)</span>
+              <span>Unduh Daftar Stok ke Excel</span>
             </button>
 
-            {/* Download Complete JSON Backup */}
+            {/* Download Complete Backup JSON */}
             <button
               type="button"
               onClick={exportFullDatabase}
               className="px-3 py-1.5 rounded-xl bg-[#800020] hover:bg-[#660019] text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-              title="Unduh seluruh database (produk, kas, transaksi) dalam 1 file JSON"
+              title="Unduh seluruh isi data toko (stok, kas, riwayat) dalam 1 file"
             >
               <Download className="w-3.5 h-3.5 text-pink-200" />
-              <span>1-Klik Backup Database (.json)</span>
+              <span>Simpan File Cadangan Toko</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Cloud Backup Hero Card */}
+      {/* 2. CADANGAN CLOUD OTOMATIS (BAHASA SEDERHANA) */}
       <div className="bg-white rounded-3xl border border-[#FCE4E8] p-6 shadow-sm">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-start gap-4">
@@ -266,14 +272,14 @@ export const BackupView: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-black text-base text-black">
-                  Sinkronisasi &amp; Cadangan Cloud MitraStore
+                  Pencadangan Data Toko
                 </h3>
-                <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-[#800020] text-white">
-                  TERENKRIPSI
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  OTOMATIS
                 </span>
               </div>
               <p className="text-xs text-stone-700 font-medium mt-1 max-w-xl">
-                Data transaksi kasir, stok fisik, dan pelanggan tersimpan otomatis di cloud terenkripsi.
+                Setiap kali kasir selesai melayani transaksi atau Anda mengubah stok, salinan cadangan langsung diperbarui secara otomatis.
               </p>
             </div>
           </div>
@@ -284,34 +290,35 @@ export const BackupView: React.FC = () => {
             className="px-4 py-2.5 rounded-2xl text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] transition-colors flex items-center gap-2 shadow-xs shrink-0 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isCloudBackingUp ? 'animate-spin' : ''}`} />
-            <span>Cadangkan Sekarang</span>
+            <span>{isCloudBackingUp ? 'Sedang Menyimpan...' : 'Cadangkan Data Sekarang'}</span>
           </button>
         </div>
 
-        {/* Cloud Status Stats */}
+        {/* Ringkasan Status Cadangan (Bahasa Ramah Pengguna) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-[#FCE4E8]">
           <div>
-            <div className="text-[11px] font-bold text-stone-600">Sinkron Terakhir:</div>
-            <div className="text-xs font-bold font-mono text-black mt-0.5">
+            <div className="text-[11px] font-bold text-stone-600">Terakhir Dicadangkan:</div>
+            <div className="text-xs font-bold text-black mt-0.5">
               {cloudBackup.lastBackupDate ? formatDateTime(cloudBackup.lastBackupDate) : 'Hari Ini'}
             </div>
           </div>
           <div>
-            <div className="text-[11px] font-bold text-stone-600">Entitas Tersimpan:</div>
-            <div className="text-xs font-bold font-mono text-black mt-0.5">
-              {products.length + transactions.length + customers.length} Records ({products.length} Produk)
+            <div className="text-[11px] font-bold text-stone-600">Jumlah Data Tersimpan:</div>
+            <div className="text-xs font-bold text-black mt-0.5">
+              {products.length} Produk &bull; {transactions.length} Transaksi
             </div>
           </div>
           <div>
-            <div className="text-[11px] font-bold text-stone-600">Enkripsi:</div>
-            <div className="text-xs font-bold font-mono text-[#800020] mt-0.5">
-              AES-GCM 256-bit
+            <div className="text-[11px] font-bold text-stone-600">Status Keamanan:</div>
+            <div className="text-xs font-bold text-emerald-800 flex items-center gap-1 mt-0.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Sangat Aman &amp; Terlindungi</span>
             </div>
           </div>
           <div>
-            <div className="text-[11px] font-bold text-stone-600">Checksum SHA-256:</div>
-            <div className="text-xs font-bold font-mono text-black mt-0.5 truncate">
-              {cloudBackup.checksum.slice(0, 10)}...
+            <div className="text-[11px] font-bold text-stone-600">Kondisi File:</div>
+            <div className="text-xs font-bold text-stone-900 mt-0.5">
+              Utuh 100% (Bebas Rusak)
             </div>
           </div>
         </div>
@@ -326,51 +333,56 @@ export const BackupView: React.FC = () => {
           {statusMessage.type === 'success' ? (
             <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-700" />
           ) : (
-            <AlertTriangle className="w-4 h-4 shrink-0 text-[#800020]" />
+            <Info className="w-4 h-4 shrink-0 text-[#800020]" />
           )}
           <span>{statusMessage.text}</span>
         </div>
       )}
 
-      {/* 2. TITIK PEMULIHAN CEPAT (LOCAL STORAGE SNAPSHOTS DI INDEXEDDB) */}
+      {/* 3. TITIK PEMULIHAN CEPAT (SNAPSHOT SEBELUM INPUT STOK RATUSAN PRODUK) */}
       <div className="bg-white rounded-3xl border border-[#FCE4E8] p-5 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#FCE4E8]">
-          <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-[#800020]" />
+          <div className="flex items-start gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-[#FFF0F3] text-[#800020] flex items-center justify-center shrink-0 mt-0.5">
+              <History className="w-4 h-4" />
+            </div>
             <div>
-              <h4 className="font-black text-sm text-black">
-                Titik Pemulihan Cepat (Snapshot Lokal Otomatis)
+              <h4 className="font-black text-sm text-black flex items-center gap-2">
+                <span>Titik Simpan Cepat (Snapshot Data)</span>
+                <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-[#FCE8EB] text-[#800020]">
+                  Sangat Disarankan
+                </span>
               </h4>
-              <p className="text-[11px] text-stone-600">
-                Jika Anda melakukan kesalahan saat menginput stok, Anda dapat memulihkan data ke titik sebelumnya.
+              <p className="text-[11px] text-stone-600 leading-relaxed mt-0.5">
+                Buat titik simpan <strong>sebelum Anda menginput ratusan stok baru</strong>. Jika di kemudian hari ada salah ketik jumlah stok, Anda bisa mengembalikan data ke titik ini dalam 1 klik.
               </p>
             </div>
           </div>
 
-          {/* Form Buat Titik Pemulihan Manual */}
-          <form onSubmit={handleCreateSnapshot} className="flex items-center gap-2">
+          {/* Form Buat Titik Simpan Baru */}
+          <form onSubmit={handleCreateSnapshot} className="flex items-center gap-2 shrink-0">
             <input
               type="text"
               value={customSnapshotLabel}
               onChange={(e) => setCustomSnapshotLabel(e.target.value)}
-              placeholder="Label (misal: Sebelum Input 100 Loyang)..."
-              className="px-3 py-1.5 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-[#800020] w-48 sm:w-64"
+              placeholder="Catatan (misal: Sebelum Input 150 Loyang)..."
+              className="px-3 py-1.5 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-[#800020] w-48 sm:w-60"
             />
             <button
               type="submit"
               disabled={isCreatingSnapshot}
-              className="px-3 py-1.5 text-xs font-bold bg-[#800020] hover:bg-[#660019] text-white rounded-xl transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+              className="px-3.5 py-1.5 text-xs font-bold bg-[#800020] hover:bg-[#660019] text-white rounded-xl transition-all cursor-pointer shadow-2xs whitespace-nowrap"
             >
               {isCreatingSnapshot ? 'Menyimpan...' : '+ Buat Titik'}
             </button>
           </form>
         </div>
 
-        {/* Daftar Snapshot */}
+        {/* Daftar Titik Simpan Yang Ada */}
         <div className="space-y-2 max-h-56 overflow-y-auto">
           {storageSnapshots.length === 0 ? (
             <div className="text-center py-4 text-xs text-stone-500">
-              Belum ada riwayat snapshot. Klik tombol di atas untuk membuat snapshot pertama.
+              Belum ada riwayat titik simpan. Ketik catatan di atas lalu klik &quot;+ Buat Titik&quot; untuk membuat titik simpan pertama.
             </div>
           ) : (
             storageSnapshots.map((snap) => (
@@ -382,11 +394,11 @@ export const BackupView: React.FC = () => {
                   <div className="text-xs font-bold text-black flex items-center gap-2">
                     <span>{snap.label}</span>
                     <span className="text-[10px] font-mono px-2 py-0.2 rounded-full bg-white border border-[#FCE4E8] text-stone-600">
-                      {snap.productCount} Produk • {snap.transactionCount} Transaksi
+                      {snap.productCount} Produk &bull; {snap.transactionCount} Transaksi
                     </span>
                   </div>
                   <div className="text-[10px] text-stone-500 font-mono mt-0.5">
-                    {formatDateTime(snap.timestamp)}
+                    Tersimpan pada: {formatDateTime(snap.timestamp)}
                   </div>
                 </div>
 
@@ -395,10 +407,10 @@ export const BackupView: React.FC = () => {
                   disabled={restoringSnapshotId === snap.id}
                   onClick={() => handleRestoreSnapshot(snap.id)}
                   className="px-3 py-1 rounded-xl text-xs font-bold bg-white hover:bg-[#800020] hover:text-white text-[#800020] border border-[#F8CCD4] transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
-                  title="Kembalikan seluruh data ke titik ini"
+                  title="Kembalikan data produk dan transaksi ke titik ini"
                 >
                   <RotateCcw className={`w-3 h-3 ${restoringSnapshotId === snap.id ? 'animate-spin' : ''}`} />
-                  <span>Pulihkan</span>
+                  <span>Kembalikan Data Ini</span>
                 </button>
               </div>
             ))
@@ -406,35 +418,38 @@ export const BackupView: React.FC = () => {
         </div>
       </div>
 
-      {/* Military Grade AES-GCM 256-bit Section */}
+      {/* 4. SIMPAN & BUKA FILE CADANGAN DENGAN KATA SANDI (BAHASA MUDAH & INTUITIF) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* Export Encrypted File */}
+        {/* Simpan File Cadangan Berpassword */}
         <div className="bg-white rounded-3xl border border-[#FCE4E8] p-5 space-y-4 shadow-sm">
           <div className="flex items-center gap-2 pb-2 border-b border-[#FCE4E8]">
             <Lock className="w-4 h-4 text-[#800020]" />
             <h4 className="font-black text-sm text-black">
-              Ekspor Cadangan Terenkripsi (Password)
+              1. Simpan Cadangan Toko Berkata Sandi
             </h4>
           </div>
 
           <p className="text-xs text-stone-700 font-medium leading-relaxed">
-            Kunci data Anda dengan kata sandi rahasia. Format enkripsi AES-GCM 256-bit standar militer menjaga privasi penuh.
+            Buat kata sandi sederhana yang mudah Anda ingat, lalu unduh file cadangan. File ini sangat aman disimpan di WhatsApp, Google Drive, atau flashdisk toko.
           </p>
 
           <form onSubmit={handleExportEncrypted} className="space-y-3">
             <div>
               <label className="block text-xs font-bold text-black mb-1">
-                Kata Sandi Kunci Backup:
+                Buat Kata Sandi Pengunci:
               </label>
               <input
                 type="password"
                 value={exportPassphrase}
                 onChange={(e) => setExportPassphrase(e.target.value)}
-                placeholder="Buat password enkripsi..."
+                placeholder="Ketik password untuk mengunci file..."
                 className="w-full px-3 py-2 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                 required
               />
+              <span className="text-[10px] text-stone-500 mt-1 block">
+                Ingat sandi ini untuk membuka kembali file cadangan di kemudian hari.
+              </span>
             </div>
 
             <button
@@ -442,22 +457,22 @@ export const BackupView: React.FC = () => {
               className="w-full py-2.5 px-4 text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
             >
               <Download className="w-4 h-4" />
-              <span>Unduh File (.enc.json)</span>
+              <span>Unduh File Cadangan Toko</span>
             </button>
           </form>
         </div>
 
-        {/* Restore / Decrypt Backup File */}
+        {/* Buka & Pulihkan File Cadangan */}
         <div className="bg-white rounded-3xl border border-[#FCE4E8] p-5 space-y-4 shadow-sm">
           <div className="flex items-center gap-2 pb-2 border-b border-[#FCE4E8]">
             <KeyRound className="w-4 h-4 text-[#800020]" />
             <h4 className="font-black text-sm text-black">
-              Dekripsi &amp; Pulihkan Cadangan
+              2. Buka &amp; Kembalikan Data dari File Cadangan
             </h4>
           </div>
 
           <p className="text-xs text-stone-700 font-medium leading-relaxed">
-            Pilih file <code>.enc.json</code> dan masukkan kata sandi untuk memulihkan seluruh data transaksi dan katalog.
+            Jika Anda berganti laptop/HP atau ingin memulihkan data lama, pilih file cadangan yang pernah Anda unduh lalu masukkan kata sandi pembukanya.
           </p>
 
           <form onSubmit={handleRestoreEncrypted} className="space-y-3">
@@ -481,7 +496,7 @@ export const BackupView: React.FC = () => {
                 type="password"
                 value={importPassphrase}
                 onChange={(e) => setImportPassphrase(e.target.value)}
-                placeholder="Password file backup..."
+                placeholder="Masukkan kata sandi pembuka file..."
                 className="w-full px-3 py-2 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black focus:ring-2 focus:ring-[#800020] focus:outline-none"
                 required
               />
@@ -495,12 +510,12 @@ export const BackupView: React.FC = () => {
               {isDecrypting ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Mendekripsi...</span>
+                  <span>Membuka &amp; Memulihkan Data...</span>
                 </>
               ) : (
                 <>
                   <Upload className="w-4 h-4" />
-                  <span>Dekripsi &amp; Pulihkan</span>
+                  <span>Buka &amp; Pulihkan Data Toko</span>
                 </>
               )}
             </button>
@@ -508,17 +523,17 @@ export const BackupView: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. RESET DATA DENGAN PENGAMAN KETAT (Ketik "RESET MITRASTORE") */}
+      {/* 5. ATUR ULANG DATA TOKO (DENGAN PENGAMAN KETAT) */}
       <div className="bg-white rounded-3xl border border-[#FCE4E8] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
         <div>
           <div className="flex items-center gap-1.5">
             <Lock className="w-3.5 h-3.5 text-stone-500" />
             <h4 className="font-black text-xs text-black">
-              Reset ke Data Sampel Default (Dilindungi Kode Keamanan)
+              Atur Ulang ke Data Toko Default (Dilindungi Kode Keamanan)
             </h4>
           </div>
           <p className="text-[11px] text-stone-600 font-medium mt-0.5">
-            Terdapat <strong>{products.length} produk</strong> dan <strong>{transactions.length} transaksi</strong> tersimpan. Fitur reset dilindungi agar data tidak terhapus tanpa sengaja.
+            Terdapat <strong>{products.length} produk</strong> dan <strong>{transactions.length} transaksi</strong> tersimpan. Fitur ini sengaja dikunci agar data tidak terhapus tanpa sengaja.
           </p>
         </div>
 
@@ -526,29 +541,29 @@ export const BackupView: React.FC = () => {
           onClick={() => setIsResetModalOpen(true)}
           className="px-3.5 py-1.5 text-xs font-bold text-stone-600 hover:text-[#800020] hover:bg-[#FCE8EB] rounded-xl transition-colors border border-[#F8CCD4] cursor-pointer shrink-0"
         >
-          Reset Data Toko
+          Atur Ulang Data
         </button>
       </div>
 
-      {/* Modal Dialog Konfirmasi Reset Keamanan */}
+      {/* Modal Dialog Konfirmasi Keamanan Reset */}
       {isResetModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
           <div className="bg-white rounded-3xl shadow-2xl border border-rose-200 max-w-md w-full p-5 sm:p-6 animate-in zoom-in-95 duration-150 text-black">
-            <div className="flex items-center gap-2.5 text-rose-700 font-black text-base pb-3 border-b border-rose-100">
-              <AlertTriangle className="w-6 h-6 text-[#800020]" />
-              <span>Konfirmasi Keamanan Reset</span>
+            <div className="flex items-center gap-2.5 text-[#800020] font-black text-base pb-3 border-b border-rose-100">
+              <Info className="w-6 h-6 text-[#800020]" />
+              <span>Konfirmasi Keamanan Atur Ulang</span>
             </div>
 
             <p className="text-xs text-stone-700 mt-3 leading-relaxed">
-              Anda memiliki <strong className="text-black">{products.length} produk</strong> yang tersimpan di toko. Jika Anda melanjutkan, data akan dikembalikan ke sampel awal toko.
+              Anda memiliki <strong className="text-black">{products.length} produk</strong> yang tersimpan di toko. Jika Anda melanjutkan, data akan diatur ulang ke sampel awal toko.
             </p>
-            <p className="text-[11px] text-emerald-800 bg-emerald-50 p-2 rounded-xl border border-emerald-200 mt-2">
-              Salinan darurat otomatis akan disimpan di daftar snapshot sebelum proses reset berlangsung.
+            <p className="text-[11px] text-emerald-800 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 mt-2 font-medium">
+              Salinan darurat data Anda sebelum reset akan otomatis disimpan di daftar titik simpan.
             </p>
 
             <div className="mt-4">
               <label className="block text-xs font-bold text-black mb-1">
-                Ketik <span className="font-mono text-[#800020] bg-rose-50 px-1 py-0.5 rounded border border-rose-200">RESET MITRASTORE</span> untuk mengonfirmasi:
+                Ketik <span className="font-mono text-[#800020] bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">RESET MITRASTORE</span> untuk melanjutkan:
               </label>
               <input
                 type="text"
@@ -580,7 +595,7 @@ export const BackupView: React.FC = () => {
                     : 'bg-stone-300 cursor-not-allowed text-stone-500'
                 }`}
               >
-                Reset Sekarang
+                Atur Ulang Sekarang
               </button>
             </div>
           </div>

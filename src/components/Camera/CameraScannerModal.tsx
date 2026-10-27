@@ -10,7 +10,7 @@ import {
   Camera, 
   X, 
   RefreshCw, 
-  AlertCircle, 
+  CameraOff, 
   CheckCircle2,
   HelpCircle,
   Upload,
@@ -40,6 +40,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
 
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [permissionState, setPermissionState] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
+  const [userPermissionGranted, setUserPermissionGranted] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [detectedItem, setDetectedItem] = useState<Product | null>(null);
   const [showGuide, setShowGuide] = useState<boolean>(false);
@@ -49,11 +50,15 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
   useEffect(() => {
     if (!isOpen) {
       stopCamera();
+      setUserPermissionGranted(false);
       setPermissionState('idle');
       return;
     }
 
-    startCamera();
+    // Reset user approval every time modal opens to ask permission explicitly
+    stopCamera();
+    setUserPermissionGranted(false);
+    setPermissionState('idle');
 
     return () => {
       stopCamera();
@@ -251,12 +256,54 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
         {/* Viewfinder / Kamera Area */}
         <div className="relative bg-slate-950 h-72 sm:h-80 flex items-center justify-center overflow-hidden">
           
-          {/* State: Meminta Izin */}
-          {permissionState === 'requesting' && (
+          {/* State 0: Konfirmasi Izin Penggunaan Kamera (Wajib Ditanyakan Setiap Kali Ingin Digunakan) */}
+          {!userPermissionGranted && (
+            <div className="text-center p-6 space-y-4 text-white max-w-sm animate-in fade-in duration-200">
+              <div className="w-14 h-14 rounded-3xl bg-[#800020] text-white mx-auto flex items-center justify-center border-2 border-white/20 shadow-lg">
+                <Camera className="w-7 h-7 text-white" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-black text-white">
+                  Konfirmasi Izin Akses Kamera
+                </h4>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Aplikasi MitraStore meminta izin untuk mengaktifkan kamera perangkat guna {mode === 'photo' ? 'mengambil foto produk loyang & cetakan' : 'memindai barcode produk secara cepat'}.
+                </p>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white/10 border border-white/10 text-[11px] text-pink-200">
+                🔒 Privasi aman: Kamera hanya aktif saat jendela ini terbuka dan tidak mengirim video ke pihak ketiga.
+              </div>
+
+              <div className="flex gap-2 pt-1 w-full">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 py-2 px-3 text-xs font-bold text-slate-300 bg-white/10 hover:bg-white/20 rounded-xl transition-all cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUserPermissionGranted(true);
+                    startCamera();
+                  }}
+                  className="flex-1 py-2 px-3 text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  <span>Izinkan Kamera</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* State: Meminta Izin Browser */}
+          {userPermissionGranted && permissionState === 'requesting' && (
             <div className="text-center p-6 space-y-3 text-white max-w-xs">
               <RefreshCw className="w-8 h-8 mx-auto animate-spin text-[#800020]" />
               <p className="text-xs font-bold text-slate-100">
-                Meminta Akses Kamera...
+                Menyalakan Kamera...
               </p>
               <p className="text-[11px] text-slate-300 leading-relaxed">
                 Silakan klik tombol <strong>"Izinkan" (Allow)</strong> jika muncul jendela perizinan di browser Anda.
@@ -268,7 +315,7 @@ export const CameraScannerModal: React.FC<CameraScannerModalProps> = ({
           {permissionState === 'denied' && (
             <div className="text-center p-5 space-y-3 text-white max-w-sm overflow-y-auto max-h-72 scrollbar-none">
               <div className="w-11 h-11 rounded-2xl bg-rose-500/20 text-rose-400 mx-auto flex items-center justify-center border border-rose-500/30">
-                <AlertCircle className="w-6 h-6" />
+                <CameraOff className="w-6 h-6" />
               </div>
               <div>
                 <h4 className="text-xs font-bold text-white">

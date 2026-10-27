@@ -16,7 +16,7 @@ import {
   Coffee, 
   MoreHorizontal, 
   CheckCircle2,
-  AlertCircle,
+  Info,
   Wallet,
   PlusCircle,
   TrendingDown,
@@ -157,7 +157,7 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
     setErrorMessage('');
 
     if (numericAmount <= 0) {
-      setErrorMessage('Nominal pengeluaran harus lebih besar dari Rp 0!');
+      setErrorMessage('Nominal pengeluaran harus lebih besar dari Rp 0.');
       return;
     }
 
@@ -427,7 +427,7 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
           {/* Error Message Banner */}
           {errorMessage && (
             <div className="p-2.5 rounded-xl bg-[#FCE8EB] border border-[#F8CCD4] text-[#800020] text-xs font-bold flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+              <Info className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
@@ -435,7 +435,7 @@ export const CashExpenseModal: React.FC<CashExpenseModalProps> = ({ isOpen, onCl
           {/* Warning if amount exceeds drawer cash */}
           {currentShift?.isOpen && projectedRemainingCash < 0 && (
             <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+              <Info className="w-4 h-4 shrink-0 text-amber-700" />
               <span>Perhatian: Nominal pengeluaran melebihi estimasi kas laci saat ini.</span>
             </div>
           )}

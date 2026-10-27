@@ -198,7 +198,7 @@ export const ShopeeSyncView: React.FC = () => {
             {showSuccessSave && (
               <div className="p-2 text-xs rounded-xl bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1.5 font-bold">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <span>Kredensial Shopee berhasil disimpan!</span>
+                <span>Kredensial Shopee berhasil disimpan.</span>
               </div>
             )}
 

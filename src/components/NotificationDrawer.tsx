@@ -11,7 +11,9 @@ import {
   ShoppingBag, 
   CloudCheck, 
   Info, 
-  CheckCheck
+  CheckCheck,
+  Volume2,
+  PackageCheck
 } from 'lucide-react';
 import { formatDateTime } from '../utils/format';
 
@@ -25,7 +27,11 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ onClose,
     notifications, 
     markNotificationAsRead, 
     markAllNotificationsAsRead, 
-    unreadNotificationsCount 
+    unreadNotificationsCount,
+    lowStockProducts,
+    outOfStockProducts,
+    setIsVoiceSettingsModalOpen,
+    voiceSettings
   } = usePOS();
 
   const getIcon = (type: string) => {
@@ -52,8 +58,12 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ onClose,
     }
   };
 
+  const totalStockAlerts = lowStockProducts.length + outOfStockProducts.length;
+
   return (
     <div className="absolute right-0 mt-2 w-[calc(100vw-1.5rem)] max-w-sm sm:w-96 bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-[#FCE4E8] z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 text-black">
+      
+      {/* Header */}
       <div className="px-4 py-3 bg-[#FFF5F7] border-b border-[#FCE4E8] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Bell className="w-4 h-4 text-[#800020]" />
@@ -72,7 +82,67 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ onClose,
         )}
       </div>
 
-      <div className="max-h-80 overflow-y-auto divide-y divide-[#FCE4E8]">
+      {/* Quick Voice Notification Settings Bar for Owner */}
+      <div className="px-3.5 py-2.5 bg-[#FFF0F3] border-b border-[#FCE4E8] flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 rounded-xl bg-[#800020] text-white flex items-center justify-center shrink-0">
+            <Volume2 className="w-3.5 h-3.5" />
+          </div>
+          <div className="truncate">
+            <div className="text-[11px] font-bold text-black flex items-center gap-1.5 truncate">
+              <span>Suara Stok Owner:</span>
+              <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold ${
+                voiceSettings.enabled ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-200 text-stone-600'
+              }`}>
+                {voiceSettings.enabled ? 'Aktif' : 'Off'}
+              </span>
+            </div>
+            <div className="text-[10px] text-stone-600 truncate">
+              {voiceSettings.soundSource === 'custom_file'
+                ? `File: ${voiceSettings.customAudioFileName || 'Audio Pribadi'}`
+                : voiceSettings.presetSound === 'speech_id'
+                ? 'Bicara Bahasa Indonesia'
+                : 'Bel / Nada Toko'}
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            setIsVoiceSettingsModalOpen(true);
+            onClose();
+          }}
+          className="px-2.5 py-1 text-[11px] font-bold text-white bg-[#800020] hover:bg-[#660019] rounded-xl transition-all shadow-2xs whitespace-nowrap cursor-pointer shrink-0"
+        >
+          Atur Suara
+        </button>
+      </div>
+
+      {/* Stock Alert Summary if low or out */}
+      {totalStockAlerts > 0 && (
+        <div 
+          onClick={() => {
+            onNavigateTab('inventory');
+            onClose();
+          }}
+          className="px-3.5 py-2 bg-[#FFF0F3] border-b border-[#FCE4E8] flex items-center justify-between cursor-pointer hover:bg-[#FCE8EB] transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Package className="w-3.5 h-3.5 text-[#800020] shrink-0" />
+            <span className="text-[11px] font-bold text-[#800020]">
+              {outOfStockProducts.length > 0 && `${outOfStockProducts.length} Habis • `}
+              {lowStockProducts.length} Menipis
+            </span>
+          </div>
+          <span className="text-[10px] font-bold text-[#800020] underline">
+            Lihat Stok &rarr;
+          </span>
+        </div>
+      )}
+
+      {/* Notifications List */}
+      <div className="max-h-72 overflow-y-auto divide-y divide-[#FCE4E8]">
         {notifications.length === 0 ? (
           <div className="p-8 text-center text-xs text-stone-600 font-medium">
             Tidak ada notifikasi saat ini

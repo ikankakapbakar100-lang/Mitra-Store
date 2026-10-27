@@ -9,7 +9,7 @@ import { StaffUser } from '../../types/pos';
 import { 
   UserCheck, 
   X, 
-  AlertCircle,
+  Info,
   KeyRound,
   Eye,
   EyeOff,
@@ -80,11 +80,11 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
     e.preventDefault();
     if (!editingStaff) return;
     if (!editName.trim()) {
-      setErrorMsg('Nama kasir tidak boleh kosong!');
+      setErrorMsg('Nama kasir tidak boleh kosong.');
       return;
     }
     if (!editPassword.trim()) {
-      setErrorMsg('Kata sandi tidak boleh kosong!');
+      setErrorMsg('Kata sandi tidak boleh kosong.');
       return;
     }
 
@@ -101,7 +101,7 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!password.trim()) {
-      setErrorMsg('Masukkan kata sandi kasir!');
+      setErrorMsg('Masukkan kata sandi kasir.');
       inputRef.current?.focus();
       return;
     }
@@ -112,7 +112,7 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
       setErrorMsg('');
       onSuccess();
     } else {
-      setErrorMsg(`Kata sandi salah! Coba lagi (Default: "${selectedStaff.pin}")`);
+      setErrorMsg(`Kata sandi salah. Coba lagi (Default: "${selectedStaff.pin}")`);
       setPassword('');
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500);
@@ -351,8 +351,8 @@ export const CashierLoginModal: React.FC<CashierLoginModalProps> = ({
 
                 {/* Error message with auto-clear notice */}
                 {errorMsg ? (
-                  <div className="flex items-center gap-1.5 text-xs text-[#800020] font-bold animate-pulse">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <div className="flex items-center gap-1.5 text-xs text-[#800020] font-bold">
+                    <Info className="w-3.5 h-3.5 shrink-0" />
                     <span>{errorMsg}</span>
                   </div>
                 ) : (

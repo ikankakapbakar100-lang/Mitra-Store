@@ -241,3 +241,67 @@ export function exportExpensesToExcel(expenses: CashExpense[], storeName: string
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+/**
+ * Export itemized transaction details per day to Excel CSV
+ */
+export function exportDailyItemizedTransactionsToExcel(
+  transactions: Transaction[],
+  dateLabel: string,
+  storeName: string
+) {
+  let csvContent = '\uFEFF';
+  const headers = [
+    'No Faktur',
+    'Tanggal & Jam',
+    'Kasir',
+    'Pelanggan',
+    'Metode Pembayaran',
+    'Nama Produk',
+    'Kategori',
+    'Jumlah (Qty)',
+    'Satuan',
+    'Harga Satuan (Rp)',
+    'Subtotal Produk (Rp)',
+    'Diskon Nota',
+    'PPN Nota',
+    'Total Bayar Transaksi',
+    'Catatan',
+  ];
+
+  csvContent += headers.map((h) => `"${h}"`).join(',') + '\r\n';
+
+  transactions.forEach((tx) => {
+    tx.items.forEach((item) => {
+      const row = [
+        tx.invoiceNo,
+        formatDateTime(tx.date),
+        tx.cashierName,
+        tx.customerName || 'Pelanggan Umum',
+        tx.paymentMethod.toUpperCase(),
+        item.product.name.replace(/"/g, '""'),
+        item.product.category,
+        item.qty,
+        item.product.unit || 'buah',
+        item.product.sellPrice,
+        item.product.sellPrice * item.qty,
+        tx.pointsUsedDiscount || tx.discount || 0,
+        tx.tax || 0,
+        tx.total,
+        (tx.notes || '').replace(/"/g, '""'),
+      ];
+      csvContent += row.map((val) => `"${val}"`).join(',') + '\r\n';
+    });
+  });
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  const safeDate = dateLabel.replace(/[^\w-]/g, '_');
+  link.setAttribute('download', `Rekap_Transaksi_Harian_${safeDate}_${storeName.replace(/\s+/g, '_')}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}

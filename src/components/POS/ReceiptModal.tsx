@@ -55,7 +55,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose }) =
     text += `Metode: ${trx.paymentMethod.toUpperCase()}\n`;
     text += `Bayar: ${formatRupiah(trx.amountPaid)}\n`;
     text += `Kembalian: ${formatRupiah(trx.change)}\n`;
-    text += `\n${storeProfile.footerNote}\nTerima kasih!`;
+    text += `\n${storeProfile.footerNote}\nTerima kasih.`;
 
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     const link = document.createElement('a');

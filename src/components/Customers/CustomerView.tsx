@@ -68,7 +68,7 @@ export const CustomerView: React.FC = () => {
 
   const handleSendWhatsApp = (c: Customer) => {
     const cleanPhone = c.phone.replace(/^0/, '62').replace(/\D/g, '');
-    const msg = `Halo Kak ${c.name}, terima kasih telah berkunjung ke ${storeProfile.name}! Saldo poin loyalitas Kakak ada ${c.points} Poin (senilai ${formatRupiah(c.points * 100)}). Yuk gunakan untuk diskon belanja!`;
+    const msg = `Halo Kak ${c.name}, terima kasih telah berkunjung ke ${storeProfile.name}. Saldo poin loyalitas Kakak ada ${c.points} Poin (senilai ${formatRupiah(c.points * 100)}). Yuk gunakan untuk diskon belanja.`;
     const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
     const link = document.createElement('a');
     link.href = url;

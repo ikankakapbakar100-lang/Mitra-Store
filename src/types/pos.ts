@@ -203,3 +203,28 @@ export interface StoreProfile {
   taxRatePercent: number; // e.g. 11 or 0
   enableTax: boolean;
 }
+
+export type PresetNotificationSound = 
+  | 'speech_id'       // Suara Bicara Bahasa Indonesia (TTS)
+  | 'chime_classic'   // Bel Kasir Ting-Ting
+  | 'store_bell'      // Lonceng Toko Modern
+  | 'soft_alert'      // Sirene Peringatan Lembut
+  | 'radar_pulse';    // Nada Radar Kasir
+
+export interface VoiceAlertSettings {
+  enabled: boolean;
+  soundSource: 'preset' | 'custom_file'; // Pilihan 1: Tersedia di sistem vs Pilihan 2: Dari file pribadi
+  presetSound: PresetNotificationSound;
+  customAudioDataUrl?: string;
+  customAudioFileName?: string;
+  customAudioTarget?: 'both' | 'low_only' | 'out_only';
+  voiceStyle?: 'speech_id' | 'chime_bell'; // for backward compat
+  lowStockTemplate: string;
+  outOfStockTemplate: string;
+  speechRate: number;
+  speechPitch: number;
+  speechVolume: number;
+  chimeSound?: string;
+  autoSpeakOnCheckout: boolean;
+}
+

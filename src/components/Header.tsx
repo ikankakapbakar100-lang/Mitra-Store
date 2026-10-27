@@ -12,10 +12,12 @@ import {
   Camera,
   ArrowLeft,
   Store,
-  ShoppingCart
+  ShoppingCart,
+  Volume2
 } from 'lucide-react';
 import { NotificationDrawer } from './NotificationDrawer';
 import { CameraScannerModal } from './Camera/CameraScannerModal';
+import { VoiceAlertSettingsModal } from './Notifications/VoiceAlertSettingsModal';
 import { formatRupiah } from '../utils/format';
 
 interface HeaderProps {
@@ -49,7 +51,10 @@ export const Header: React.FC<HeaderProps> = ({
     activePosTab,
     setActivePosTab,
     activeCartSession,
-    cartSessions
+    cartSessions,
+    isVoiceSettingsModalOpen,
+    setIsVoiceSettingsModalOpen,
+    voiceSettings,
   } = usePOS();
 
   const totalCartCount = cart.reduce((acc, item) => acc + item.qty, 0);
@@ -65,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'sales_recap', label: 'Rekap Penjualan' },
     { id: 'customers', label: 'Pelanggan Setia' },
     { id: 'shopee', label: 'Shopee Sync' },
-    { id: 'backup', label: 'Cloud & Enkripsi' },
+    { id: 'backup', label: 'Cadangan & Keamanan' },
   ];
 
   return (
@@ -234,6 +239,23 @@ export const Header: React.FC<HeaderProps> = ({
               <Bluetooth className="w-4 h-4" />
             </button>
 
+            {/* Tombol Suara Notifikasi Stok Owner */}
+            <button
+              onClick={() => setIsVoiceSettingsModalOpen(true)}
+              className={`p-2 rounded-xl border transition-colors cursor-pointer relative ${
+                voiceSettings.enabled
+                  ? 'border-[#F8CCD4] bg-[#FCE8EB] text-[#800020] hover:bg-[#F8CCD4]'
+                  : 'border-[#FCE4E8] bg-white text-stone-400 hover:bg-[#FCE8EB]'
+              }`}
+              title={`Pengaturan Suara Notifikasi Stok: ${voiceSettings.enabled ? 'Aktif' : 'Nonaktif'}`}
+              aria-label="Pengaturan Suara Notifikasi"
+            >
+              <Volume2 className="w-4 h-4" />
+              {voiceSettings.enabled && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+              )}
+            </button>
+
             {/* Notifications */}
             <div className="relative">
               <button
@@ -243,7 +265,7 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <Bell className="w-4 h-4" />
                 {unreadNotificationsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#800020] text-white rounded-full text-[9px] font-black flex items-center justify-center animate-pulse">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#800020] text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-2xs">
                     {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                   </span>
                 )}
@@ -325,6 +347,12 @@ export const Header: React.FC<HeaderProps> = ({
           mode="scan"
         />
       )}
+
+      {/* Voice Alert Settings Modal for Owner */}
+      <VoiceAlertSettingsModal
+        isOpen={isVoiceSettingsModalOpen}
+        onClose={() => setIsVoiceSettingsModalOpen(false)}
+      />
     </>
   );
 };

@@ -10,7 +10,7 @@ import { formatRupiah } from '../../utils/format';
 import { 
   X, 
   CheckCircle2, 
-  AlertCircle,
+  Info,
   RefreshCw,
   QrCode,
   Banknote,
@@ -317,7 +317,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
 
         {errorMessage && (
           <div className="mt-3 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-[#800020] text-xs font-bold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+            <Info className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
