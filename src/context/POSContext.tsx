@@ -180,6 +180,8 @@ interface POSContextType {
   connectBluetooth: () => Promise<void>;
   disconnectBluetooth: () => void;
   printTransactionReceipt: (trx: Transaction) => Promise<boolean>;
+  testBluetoothPrint: () => Promise<boolean>;
+  setBluetoothPaperType: (type: '58mm' | '80mm') => void;
 
   // Theme
   isDarkMode: boolean;
@@ -434,7 +436,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          return parsed.map((s: CustomerCartSession, idx: number) => {
+            // Auto normalize old naming format to sequential Pelanggan #1, #2...
+            if (s.name && (s.name.startsWith('Pelanggan ') || s.name === 'Keranjang Utama')) {
+              const numStr = s.name.replace(/[^0-9]/g, '');
+              const num = numStr ? parseInt(numStr, 10) : idx + 1;
+              return { ...s, name: `Pelanggan #${num}` };
+            }
+            return s;
+          });
         }
       }
       // Migration from legacy single cart if present
@@ -443,7 +453,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return [
         {
           id: 'cart-1',
-          name: 'Pelanggan 1',
+          name: 'Pelanggan #1',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           items: Array.isArray(legacyCart) ? legacyCart : [],
@@ -453,7 +463,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         },
       ];
     } catch {
-      return [createInitialCartSession('cart-1', 'Pelanggan 1')];
+      return [createInitialCartSession('cart-1', 'Pelanggan #1')];
     }
   });
 
@@ -759,11 +769,20 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Multi-Customer Session Actions
   const createNewCartSession = useCallback((customName?: string): string => {
     const newId = 'cart-' + Date.now();
-    let defaultIndex = cartSessions.length + 1;
-    while (cartSessions.some((s) => s.name === `Pelanggan ${defaultIndex}`)) {
-      defaultIndex++;
+    // Auto-calculate sequential order number (Pesanan #1, Pesanan #2, ...)
+    let maxNum = 0;
+    cartSessions.forEach((s) => {
+      const match = s.name.match(/(?:Pesanan|Pelanggan)?\s*#?(\d+)/i);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (n > maxNum) maxNum = n;
+      }
+    });
+    let nextNum = maxNum + 1;
+    while (cartSessions.some((s) => s.name === `Pesanan #${nextNum}` || s.name === `Pelanggan #${nextNum}`)) {
+      nextNum++;
     }
-    const name = customName?.trim() || `Pelanggan ${defaultIndex}`;
+    const name = customName?.trim() || `Pesanan #${nextNum}`;
     const newSession: CustomerCartSession = {
       id: newId,
       name,
@@ -776,18 +795,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setCartSessions((prev) => [...prev, newSession]);
     setActiveCartSessionId(newId);
-    addNotification('Keranjang Baru Dibuka', `Keranjang untuk "${name}" siap digunakan.`, 'system');
+    addNotification('Pesanan Baru Dibuka', `${name} siap menerima pesanan.`, 'system');
     return newId;
   }, [cartSessions, addNotification]);
 
   const deleteCartSession = useCallback((id: string) => {
     setCartSessions((prev) => {
       if (prev.length <= 1) {
-        // Reset the only cart
+        // Reset the only cart to default Pesanan #1
         return [
           {
             id: prev[0].id,
-            name: 'Pelanggan 1',
+            name: 'Pesanan #1',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             items: [],
@@ -803,7 +822,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return filtered;
     });
-    addNotification('Keranjang Dihapus', 'Keranjang pelanggan telah dihapus.', 'system');
+    addNotification('Pesanan Dibatalkan', 'Daftar pesanan telah dibatalkan/dihapus.', 'system');
   }, [activeCartSessionId, addNotification]);
 
   const renameCartSession = useCallback((id: string, newName: string) => {
@@ -1868,6 +1887,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return await bluetoothPrinter.printTransaction(trx, storeProfile);
   };
 
+  const testBluetoothPrint = async (): Promise<boolean> => {
+    return await bluetoothPrinter.printTest(storeProfile.name || 'MitraStore');
+  };
+
+  const setBluetoothPaperType = (type: '58mm' | '80mm') => {
+    bluetoothPrinter.setPaperType(type);
+    setBluetoothStatus(prev => ({ ...prev, printerType: type }));
+  };
+
   return (
     <POSContext.Provider
       value={{
@@ -1961,6 +1989,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         connectBluetooth,
         disconnectBluetooth,
         printTransactionReceipt,
+        testBluetoothPrint,
+        setBluetoothPaperType,
         isDarkMode,
         toggleDarkMode,
         voiceSettings,

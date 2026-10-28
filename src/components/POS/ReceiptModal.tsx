@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { usePOS } from '../../context/POSContext';
 import { formatRupiah, formatDateTime, printReceiptOrReport } from '../../utils/format';
 import { 
@@ -26,15 +26,33 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose }) =
     lastTransaction, 
     storeProfile, 
     bluetoothStatus, 
+    connectBluetooth,
     printTransactionReceipt 
   } = usePOS();
+
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [printFeedback, setPrintFeedback] = useState<string | null>(null);
 
   if (!isOpen || !lastTransaction) return null;
 
   const trx = lastTransaction;
 
   const handleBluetoothPrint = async () => {
-    await printTransactionReceipt(trx);
+    setIsPrinting(true);
+    setPrintFeedback(null);
+    try {
+      if (!bluetoothStatus.isConnected) {
+        await connectBluetooth();
+      }
+      await printTransactionReceipt(trx);
+      setPrintFeedback('Struk berhasil dicetak.');
+    } catch {
+      setPrintFeedback('Gagal koneksi Bluetooth. Mengalihkan ke cetak perangkat.');
+      printReceiptOrReport('printable-receipt');
+    } finally {
+      setIsPrinting(false);
+      setTimeout(() => setPrintFeedback(null), 3500);
+    }
   };
 
   const handlePrintWindow = () => {
@@ -204,12 +222,26 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose }) =
         <div className="mt-6 space-y-2">
           {/* Bluetooth Thermal Print */}
           <button
+            type="button"
+            disabled={isPrinting}
             onClick={handleBluetoothPrint}
-            className="w-full py-2.5 px-4 rounded-2xl text-xs font-bold text-white bg-black hover:bg-[#660019] transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+            className={`w-full py-2.5 px-4 rounded-2xl text-xs font-bold text-white transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer ${
+              isPrinting ? 'bg-stone-500 cursor-not-allowed' : 'bg-black hover:bg-[#660019]'
+            }`}
           >
             <Bluetooth className="w-4 h-4 text-pink-300" />
-            <span>Cetak Bluetooth ({bluetoothStatus.deviceName || 'Thermal POS'})</span>
+            <span>
+              {isPrinting
+                ? 'Sedang Mencetak Struk...'
+                : `Cetak Bluetooth (${bluetoothStatus.deviceName || 'Thermal POS'})`}
+            </span>
           </button>
+
+          {printFeedback && (
+            <div className="p-2 text-center text-xs font-bold rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200 animate-in fade-in duration-150">
+              {printFeedback}
+            </div>
+          )}
 
           {/* Browser Print / PDF & WhatsApp */}
           <div className="grid grid-cols-2 gap-2">

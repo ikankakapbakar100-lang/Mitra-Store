@@ -9,15 +9,13 @@ import { Logo } from './Logo';
 import { 
   Bell, 
   Bluetooth, 
-  Camera,
   ArrowLeft,
-  Store,
   ShoppingCart,
   Volume2
 } from 'lucide-react';
 import { NotificationDrawer } from './NotificationDrawer';
-import { CameraScannerModal } from './Camera/CameraScannerModal';
 import { VoiceAlertSettingsModal } from './Notifications/VoiceAlertSettingsModal';
+import { BluetoothPrinterModal } from './POS/BluetoothPrinterModal';
 import { formatRupiah } from '../utils/format';
 
 interface HeaderProps {
@@ -40,18 +38,14 @@ export const Header: React.FC<HeaderProps> = ({
   const { 
     currentUser, 
     bluetoothStatus, 
-    connectBluetooth,
     unreadNotificationsCount,
     lowStockProducts,
     outOfStockProducts,
     currentShift,
-    addToCart,
     cart,
     cartTotal,
     activePosTab,
     setActivePosTab,
-    activeCartSession,
-    cartSessions,
     isVoiceSettingsModalOpen,
     setIsVoiceSettingsModalOpen,
     voiceSettings,
@@ -60,7 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
   const totalCartCount = cart.reduce((acc, item) => acc + item.qty, 0);
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+  const [isBluetoothModalOpen, setIsBluetoothModalOpen] = useState(false);
 
   const totalStockAlerts = lowStockProducts.length + outOfStockProducts.length;
 
@@ -75,42 +69,47 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-[#FFF0F3]/90 backdrop-blur-md border-b border-[#FCE4E8] transition-colors text-black">
+      <header className={`sticky top-0 z-40 backdrop-blur-md transition-colors text-black border-b ${
+        appMode === 'pos' 
+          ? 'bg-white/90 border-[#FCE4E8] shadow-2xs' 
+          : 'bg-[#FFF0F3]/95 border-[#FCE4E8]'
+      }`}>
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-13 sm:h-16 flex items-center justify-between gap-2 sm:gap-4">
           
-          {/* Zone 1: Brand & Back to Mode Menu */}
-          <div className="flex items-center gap-3 shrink-0">
+          {/* Zona Kiri: Tombol Back ke Welcoming Page (Tanpa Logo & Tanpa Teks POS/Toko di Mode Kasir) */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
+              type="button"
               onClick={onBackToWelcome}
-              className="p-2 rounded-xl text-black hover:text-[#800020] hover:bg-[#FCE8EB] transition-colors cursor-pointer"
-              title="Kembali ke Layar Awal [ESC]"
+              className="p-2 sm:px-3 sm:py-2 rounded-xl text-black hover:text-[#800020] hover:bg-[#FCE8EB] transition-colors cursor-pointer flex items-center gap-1.5"
+              title="Kembali ke Layar Awal"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4 text-[#800020]" />
+              <span className="text-xs font-bold hidden sm:inline">Menu Awal</span>
             </button>
 
-            <div onClick={onBackToWelcome} className="cursor-pointer">
-              <Logo size="sm" />
-            </div>
-
-            {/* Mode Indicator Badge (Simbolik) */}
-            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4]">
-              {appMode === 'pos' ? (
-                <>
-                  <ShoppingCart className="w-3 h-3 text-[#800020]" />
-                  <span>POS</span>
-                </>
-              ) : (
-                <>
-                  <Store className="w-3 h-3 text-[#800020]" />
-                  <span>Toko</span>
-                </>
-              )}
-            </span>
+            {/* Logo hanya ditampilkan jika di Mode Kelola Toko */}
+            {appMode === 'management' && (
+              <div onClick={onBackToWelcome} className="cursor-pointer">
+                <Logo size="sm" />
+              </div>
+            )}
           </div>
 
-          {/* Zone 2: Navigation Links (Management Mode Only) or Switch to Management (POS Mode) */}
-          <div className="flex-1 flex justify-center">
-            {appMode === 'management' ? (
+          {/* Zona Tengah: Status Kasir Berisi Nama Kasir Saja (Mode Kasir POS) atau Tab Navigasi (Mode Kelola Toko) */}
+          <div className="flex-1 flex justify-center px-1">
+            {appMode === 'pos' ? (
+              /* Status Kasir: Yang isinya Nama Kasir Saja */
+              <div 
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#FCE4E8] text-xs font-bold text-black shadow-2xs select-none"
+                title={`Kasir: ${currentUser.name}`}
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
+                <span className="truncate max-w-[150px] sm:max-w-[240px] font-bold">
+                  {currentUser.name}
+                </span>
+              </div>
+            ) : (
               <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-stone-700">
                 {managementNavLinks.map((link) => {
                   const isActive = 
@@ -120,6 +119,7 @@ export const Header: React.FC<HeaderProps> = ({
                   return (
                     <button
                       key={link.id}
+                      type="button"
                       onClick={() => setActiveManagementTab(link.id)}
                       className={`py-1 text-xs whitespace-nowrap transition-colors relative cursor-pointer ${
                         isActive
@@ -140,107 +140,72 @@ export const Header: React.FC<HeaderProps> = ({
                   );
                 })}
               </nav>
-            ) : (
-              <div className="hidden sm:flex items-center gap-2 text-xs text-stone-600">
-                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-                <span>Kasir: <strong className="text-black font-bold">{currentUser.name}</strong></span>
-              </div>
             )}
           </div>
 
-          {/* Zone 3: Actions & Multi-User Cashier Controls (Simbolik Minimalis) */}
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Quick Switch: Simbolik Ikon POS atau Kelola Toko */}
-            {appMode === 'management' ? (
-              <button
-                onClick={() => onSwitchMode('pos')}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-[#800020] text-white hover:bg-[#660019] transition-colors shadow-xs cursor-pointer"
-                title="Buka Kasir POS"
-                aria-label="Kasir POS"
-              >
-                <ShoppingCart className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">POS</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => onSwitchMode('management')}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4] hover:bg-[#F8CCD4] transition-colors shadow-xs cursor-pointer"
-                title="Buka Kelola Toko"
-                aria-label="Kelola Toko"
-              >
-                <Store className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Toko</span>
-              </button>
-            )}
-
-            {/* Quick Camera Barcode Scanner (POS Mode) */}
+          {/* Zona Kanan: Keranjang (Tanpa Teks Jumlah Pelanggan), Shift, Bluetooth Printer, Suara Notifikasi, Lonceng */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            
+            {/* Tombol Halaman Khusus Keranjang di Header (Mode Kasir POS) */}
             {appMode === 'pos' && (
-              <>
-                <button
-                  onClick={() => setIsCameraModalOpen(true)}
-                  className="flex items-center gap-1.5 p-2 rounded-xl bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4] hover:bg-[#F8CCD4] transition-colors cursor-pointer"
-                  title="Buka Kamera Barcode"
-                >
-                  <Camera className="w-4 h-4" />
-                </button>
-
-                {/* Tombol Halaman Khusus Keranjang di Header */}
-                <button
-                  onClick={() => setActivePosTab(activePosTab === 'cart' ? 'catalog' : 'cart')}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer relative ${
-                    activePosTab === 'cart'
-                      ? 'bg-[#800020] text-white border-[#800020] shadow-sm'
-                      : 'bg-[#FCE8EB] text-[#800020] border-[#F8CCD4] hover:bg-[#F8CCD4]'
-                  }`}
-                  title={`Buka Keranjang: ${activeCartSession.name} (${cartSessions.length} antrean pelanggan)`}
-                  aria-label="Keranjang Belanja"
-                >
-                  <div className="relative">
-                    <ShoppingCart className="w-4 h-4" />
-                    {totalCartCount > 0 && (
-                      <span className="absolute -top-1.5 -right-2 min-w-3.5 h-3.5 px-0.5 bg-white text-[#800020] border border-[#800020] rounded-full text-[8px] font-black flex items-center justify-center shadow-2xs">
-                        {totalCartCount > 99 ? '99+' : totalCartCount}
-                      </span>
-                    )}
-                  </div>
-                  <span className="hidden md:inline font-mono">
-                    {activeCartSession.name}: {totalCartCount > 0 ? formatRupiah(cartTotal) : '0 item'}
-                  </span>
-                  {cartSessions.length > 1 && (
-                    <span className="hidden xl:inline text-[9px] px-1 py-0.2 rounded-full bg-white/20 font-mono font-bold">
-                      +{cartSessions.length - 1}
+              <button
+                type="button"
+                onClick={() => setActivePosTab(activePosTab === 'cart' ? 'catalog' : 'cart')}
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer relative ${
+                  activePosTab === 'cart'
+                    ? 'bg-[#800020] text-white border-[#800020] shadow-sm'
+                    : 'bg-[#FCE8EB] text-[#800020] border-[#F8CCD4] hover:bg-[#F8CCD4]'
+                }`}
+                title="Buka Keranjang Belanja"
+                aria-label="Keranjang Belanja"
+              >
+                <div className="relative">
+                  <ShoppingCart className="w-4 h-4" />
+                  {totalCartCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-3.5 h-3.5 px-0.5 bg-white text-[#800020] border border-[#800020] rounded-full text-[8px] font-black flex items-center justify-center shadow-2xs">
+                      {totalCartCount > 99 ? '99+' : totalCartCount}
                     </span>
                   )}
-                </button>
-              </>
+                </div>
+                <span className="hidden sm:inline font-mono">
+                  {totalCartCount > 0 ? formatRupiah(cartTotal) : 'Keranjang'}
+                </span>
+              </button>
             )}
 
-            {/* Shift Status (Saldo Laci) - Tampil di HP & Desktop */}
+            {/* Shift Status (Saldo Laci) */}
             <button
+              type="button"
               onClick={onOpenShiftModal}
               className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 text-xs font-bold rounded-xl border border-[#FCE4E8] bg-white text-black hover:bg-[#FCE8EB] transition-colors cursor-pointer"
-              title="Status Shift & Saldo Laci Kasir"
+              title="Status Shift Kasir"
             >
               <span className={`w-2 h-2 rounded-full shrink-0 ${currentShift?.isOpen ? 'bg-emerald-600' : 'bg-[#800020]'}`} />
               <span className="hidden sm:inline whitespace-nowrap">{currentShift?.isOpen ? 'Shift Aktif' : 'Buka Shift'}</span>
               <span className="sm:hidden text-[10px] font-bold">{currentShift?.isOpen ? 'Shift' : 'Buka'}</span>
             </button>
 
-            {/* Bluetooth Printer */}
+            {/* Bluetooth Thermal Printer (Diperbaiki & Terhubung ke Modal Pengaturan) */}
             <button
-              onClick={connectBluetooth}
-              className={`p-2 rounded-xl border transition-colors cursor-pointer ${
+              type="button"
+              onClick={() => setIsBluetoothModalOpen(true)}
+              className={`p-2 rounded-xl border transition-colors cursor-pointer relative ${
                 bluetoothStatus.isConnected
-                  ? 'border-[#F8CCD4] bg-[#FCE8EB] text-[#800020]'
-                  : 'border-[#FCE4E8] bg-white text-black hover:bg-[#FCE8EB]'
+                  ? 'border-[#F8CCD4] bg-[#FCE8EB] text-[#800020] hover:bg-[#F8CCD4]'
+                  : 'border-[#FCE4E8] bg-white text-stone-700 hover:bg-[#FCE8EB]'
               }`}
-              title={bluetoothStatus.isConnected ? bluetoothStatus.statusMessage : 'Printer Bluetooth'}
+              title={bluetoothStatus.isConnected ? `Printer Bluetooth: ${bluetoothStatus.deviceName || 'Terhubung'}` : 'Hubungkan Printer Bluetooth'}
+              aria-label="Printer Bluetooth"
             >
               <Bluetooth className="w-4 h-4" />
+              {bluetoothStatus.isConnected && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+              )}
             </button>
 
             {/* Tombol Suara Notifikasi Stok Owner */}
             <button
+              type="button"
               onClick={() => setIsVoiceSettingsModalOpen(true)}
               className={`p-2 rounded-xl border transition-colors cursor-pointer relative ${
                 voiceSettings.enabled
@@ -256,9 +221,10 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
 
-            {/* Notifications */}
+            {/* Logo Lonceng Notifikasi (Tetap Dibiarkan) */}
             <div className="relative">
               <button
+                type="button"
                 onClick={() => setIsNotifOpen(!isNotifOpen)}
                 className="p-2 rounded-xl border border-[#FCE4E8] bg-white text-black hover:bg-[#FCE8EB] transition-colors relative cursor-pointer"
                 title="Notifikasi"
@@ -283,25 +249,6 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
-            {/* Kasir Aktif Indikator */}
-            {appMode === 'pos' && (
-              <div
-                className="flex items-center gap-2 p-1.5 pl-2.5 pr-3 rounded-xl border border-[#FCE4E8] bg-white select-none"
-                title={`Kasir Aktif: ${currentUser.name}`}
-              >
-                <div className={`w-6 h-6 rounded-lg text-white text-xs font-bold flex items-center justify-center shrink-0 ${currentUser.avatarColor}`}>
-                  {currentUser.name.charAt(0)}
-                </div>
-                <div className="hidden sm:block text-left text-xs leading-tight">
-                  <div className="font-extrabold text-black truncate max-w-[85px]">
-                    {currentUser.name.split(' ')[0]}
-                  </div>
-                  <div className="text-[9px] text-[#800020] uppercase font-bold">
-                    {currentUser.role}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -315,6 +262,7 @@ export const Header: React.FC<HeaderProps> = ({
               return (
                 <button
                   key={link.id}
+                  type="button"
                   onClick={() => setActiveManagementTab(link.id)}
                   className={`px-3 py-1 text-xs font-bold rounded-xl whitespace-nowrap transition-colors cursor-pointer ${
                     isActive
@@ -335,18 +283,11 @@ export const Header: React.FC<HeaderProps> = ({
         )}
       </header>
 
-      {/* Camera Live Barcode Scanner Modal */}
-      {isCameraModalOpen && (
-        <CameraScannerModal
-          isOpen={isCameraModalOpen}
-          onClose={() => setIsCameraModalOpen(false)}
-          onDetectedProduct={(prod) => {
-            addToCart(prod, 1);
-            setIsCameraModalOpen(false);
-          }}
-          mode="scan"
-        />
-      )}
+      {/* Bluetooth Printer Modal */}
+      <BluetoothPrinterModal
+        isOpen={isBluetoothModalOpen}
+        onClose={() => setIsBluetoothModalOpen(false)}
+      />
 
       {/* Voice Alert Settings Modal for Owner */}
       <VoiceAlertSettingsModal

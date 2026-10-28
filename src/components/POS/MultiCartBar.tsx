@@ -74,9 +74,6 @@ export const MultiCartBar: React.FC<MultiCartBarProps> = ({ compact = false }) =
             <span className="text-xs sm:text-xs font-black text-black">
               Antrean Pelanggan
             </span>
-            <span className="text-[10px] text-stone-500 ml-1.5 font-medium">
-              ({cartSessions.length} keranjang aktif bersamaan)
-            </span>
           </div>
         </div>
 

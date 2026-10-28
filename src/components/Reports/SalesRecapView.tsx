@@ -5,1843 +5,1009 @@
 
 import React, { useState, useMemo } from 'react';
 import { usePOS } from '../../context/POSContext';
-import { Transaction, DailyCashRecord, CashExpense, ExpenseCategory } from '../../types/pos';
+import { Transaction, DailyCashRecord } from '../../types/pos';
 import {
   formatRupiah,
-  formatDateOnly,
-  formatTimeOnly,
   formatDateTime,
-  exportTransactionsToExcel,
-  exportDailyCashToExcel,
-  exportExpensesToExcel,
-  exportDailyItemizedTransactionsToExcel,
+  formatTimeOnly,
+  formatDateOnly,
 } from '../../utils/format';
 import {
-  TrendingUp,
-  CreditCard,
+  Wallet,
+  Lock,
+  Banknote,
   Calendar,
-  Download,
-  CheckCircle2,
-  Search,
-  Eye,
-  Trash2,
-  Plus,
-  X,
-  History,
-  Receipt,
-  ShieldCheck,
-  Package,
-  ArrowDownCircle,
-  ShoppingBag,
-  Sparkles,
   ChevronLeft,
   ChevronRight,
-  Share2,
-  Printer,
+  TrendingUp,
+  ShoppingBag,
+  Coins,
   FileSpreadsheet,
-  ArrowUpRight,
-  Layers,
-  Clock,
-  User,
-  Coffee,
-  Zap,
-  Tag
+  Receipt,
+  X,
+  Check,
+  Edit3,
+  Eye,
+  Printer,
+  Sparkles,
+  Info,
+  ArrowDownRight,
+  CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react';
-import { CashExpenseModal } from '../POS/CashExpenseModal';
 
 interface SalesRecapViewProps {
   onOpenShiftModal?: () => void;
 }
 
-export const SalesRecapView: React.FC<SalesRecapViewProps> = ({ onOpenShiftModal }) => {
+export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
   const {
     transactions,
     currentShift,
     updateShiftBalances,
     dailyCashHistory,
     addOrUpdateDailyCashRecord,
-    deleteDailyCashRecord,
     storeProfile,
     currentUser,
     expenses,
-    deleteExpense,
-    isExpenseModalOpen,
-    setIsExpenseModalOpen,
   } = usePOS();
 
-  // 4 Tab Utama:
-  // 1. 'daily-recap': Rekap Penjualan Per Hari (Jurnal Transaksi Detail: apa yang dibeli, harga, kasir)
-  // 2. 'period-recap': Rekap Penjualan Periode Tertentu (Analisis omzet, laba, tren periode)
-  // 3. 'cash-history': Riwayat Saldo Kas Laci Harian (Kas Awal / Akhir)
-  // 4. 'expenses': Pengeluaran Kas & Pembelian Stok Toko
-  const [activeTab, setActiveTab] = useState<'daily-recap' | 'period-recap' | 'cash-history' | 'expenses'>('daily-recap');
-
-  // =========================================================================
-  // STATE TAB 1: REKAP PENJUALAN PER HARI
-  // =========================================================================
+  // Helper tanggal hari ini
   const getTodayISO = () => new Date().toISOString().split('T')[0];
-  const [selectedDay, setSelectedDay] = useState<string>(getTodayISO());
-  const [dailySearchQuery, setDailySearchQuery] = useState<string>('');
+  const todayISO = getTodayISO();
+
+  // State mode tanggal: 'harian' (default) vs 'periode'
+  const [dateMode, setDateMode] = useState<'harian' | 'periode'>('harian');
+  const [selectedDate, setSelectedDate] = useState<string>(todayISO);
+
+  // State untuk periode
+  const [startDate, setStartDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 6);
+    return d.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState<string>(todayISO);
+
+  // State Modals
+  const [isInitialCashModalOpen, setIsInitialCashModalOpen] = useState(false);
+  const [isClosingCashModalOpen, setIsClosingCashModalOpen] = useState(false);
+  const [isCashSummaryModalOpen, setIsCashSummaryModalOpen] = useState(false);
+  const [selectedReceiptTx, setSelectedReceiptTx] = useState<Transaction | null>(null);
+
+  // Form input state untuk Modal Saldo Awal
+  const [initialCashInput, setInitialCashInput] = useState<string>('');
+  const [initialCashNotes, setInitialCashNotes] = useState<string>('');
+
+  // Form input state untuk Modal Saldo Akhir
+  const [closingCashInput, setClosingCashInput] = useState<string>('');
+  const [closingCashNotes, setClosingCashNotes] = useState<string>('');
 
   // Navigasi Tanggal Harian
   const handleShiftDay = (deltaDays: number) => {
-    const current = new Date(selectedDay + 'T00:00:00');
+    const current = new Date(selectedDate + 'T00:00:00');
     current.setDate(current.getDate() + deltaDays);
-    setSelectedDay(current.toISOString().split('T')[0]);
+    setSelectedDate(current.toISOString().split('T')[0]);
   };
 
-  // Transaksi pada hari yang dipilih
-  const dailyTransactions = useMemo(() => {
+  // Format tanggal dalam Bahasa Indonesia
+  const formatIndonesianDate = (isoDateStr: string) => {
+    try {
+      const date = new Date(isoDateStr + 'T00:00:00');
+      return date.toLocaleDateString('id-ID', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch {
+      return isoDateStr;
+    }
+  };
+
+  // Preset filter periode
+  const handleSetPresetPeriod = (days: number) => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - (days - 1));
+    setStartDate(start.toISOString().split('T')[0]);
+    setEndDate(end.toISOString().split('T')[0]);
+  };
+
+  const handleSetThisMonth = () => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    setStartDate(firstDay.toISOString().split('T')[0]);
+    setEndDate(todayISO);
+  };
+
+  // Filter transaksi berdasarkan tanggal / rentang periode
+  const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {
       const tDay = new Date(t.date).toISOString().split('T')[0];
-      if (tDay !== selectedDay) return false;
-
-      if (dailySearchQuery.trim()) {
-        const q = dailySearchQuery.toLowerCase();
-        const matchesInvoice = (t.invoiceNo || t.id).toLowerCase().includes(q);
-        const matchesCashier = t.cashierName.toLowerCase().includes(q);
-        const matchesCustomer = (t.customerName || '').toLowerCase().includes(q);
-        const matchesItems = t.items.some((i) => i.product.name.toLowerCase().includes(q));
-        if (!matchesInvoice && !matchesCashier && !matchesCustomer && !matchesItems) return false;
+      if (dateMode === 'harian') {
+        return tDay === selectedDate;
+      } else {
+        return tDay >= startDate && tDay <= endDate;
       }
-      return true;
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, selectedDay, dailySearchQuery]);
+  }, [transactions, dateMode, selectedDate, startDate, endDate]);
 
-  // Pengeluaran pada hari yang dipilih
-  const dailyExpenses = useMemo(() => {
-    return expenses
-      .filter((e) => new Date(e.date).toISOString().split('T')[0] === selectedDay)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [expenses, selectedDay]);
-
-  // Metrik Penjualan Hari Terpilih
-  const dailyMetrics = useMemo(() => {
-    let revenue = 0;
-    let profit = 0;
-    let totalItemsCount = 0;
-    let cashRevenue = 0;
-    let digitalRevenue = 0;
-
-    dailyTransactions.forEach((t) => {
-      revenue += t.total;
-      profit += t.profit;
-      totalItemsCount += t.items.reduce((sum, item) => sum + item.qty, 0);
-      if (t.paymentMethod === 'tunai') cashRevenue += t.total;
-      else digitalRevenue += t.total;
-    });
-
-    // Pengeluaran kas pada hari ini
-    const dayExpenses = expenses
-      .filter((e) => new Date(e.date).toISOString().split('T')[0] === selectedDay)
-      .reduce((sum, e) => sum + e.amount, 0);
-
-    return {
-      revenue,
-      profit,
-      txCount: dailyTransactions.length,
-      totalItemsCount,
-      cashRevenue,
-      digitalRevenue,
-      dayExpenses,
-      netCash: cashRevenue - dayExpenses,
-      marginPercent: revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : '0',
-    };
-  }, [dailyTransactions, expenses, selectedDay]);
-
-  // =========================================================================
-  // STATE TAB 2: REKAP PENJUALAN PERIODE TERTENTU
-  // =========================================================================
-  const [periodPreset, setPeriodPreset] = useState<'today' | '7days' | '30days' | 'this_month' | 'last_month' | 'custom'>('7days');
-  const [customStartDate, setCustomStartDate] = useState<string>(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 7);
-    return d.toISOString().split('T')[0];
-  });
-  const [customEndDate, setCustomEndDate] = useState<string>(getTodayISO());
-  const [periodSearchQuery, setPeriodSearchQuery] = useState<string>('');
-
-  // Transaksi dalam rentang periode terpilih
-  const periodTransactions = useMemo(() => {
-    const now = new Date();
-
-    return transactions.filter((t) => {
-      const tDate = new Date(t.date);
-
-      if (periodPreset === 'today') {
-        const isToday =
-          tDate.getDate() === now.getDate() &&
-          tDate.getMonth() === now.getMonth() &&
-          tDate.getFullYear() === now.getFullYear();
-        if (!isToday) return false;
-      } else if (periodPreset === '7days') {
-        const diffDays = (now.getTime() - tDate.getTime()) / (1000 * 3600 * 24);
-        if (diffDays > 7) return false;
-      } else if (periodPreset === '30days') {
-        const diffDays = (now.getTime() - tDate.getTime()) / (1000 * 3600 * 24);
-        if (diffDays > 30) return false;
-      } else if (periodPreset === 'this_month') {
-        const isThisMonth =
-          tDate.getMonth() === now.getMonth() &&
-          tDate.getFullYear() === now.getFullYear();
-        if (!isThisMonth) return false;
-      } else if (periodPreset === 'last_month') {
-        const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const isLastMonth =
-          tDate.getMonth() === lastMonthDate.getMonth() &&
-          tDate.getFullYear() === lastMonthDate.getFullYear();
-        if (!isLastMonth) return false;
-      } else if (periodPreset === 'custom') {
-        const start = new Date(customStartDate + 'T00:00:00').getTime();
-        const end = new Date(customEndDate + 'T23:59:59').getTime();
-        const tTime = tDate.getTime();
-        if (tTime < start || tTime > end) return false;
-      }
-
-      if (periodSearchQuery.trim()) {
-        const q = periodSearchQuery.toLowerCase();
-        const matchesInvoice = (t.invoiceNo || t.id).toLowerCase().includes(q);
-        const matchesCashier = t.cashierName.toLowerCase().includes(q);
-        const matchesCustomer = (t.customerName || '').toLowerCase().includes(q);
-        const matchesItems = t.items.some((i) => i.product.name.toLowerCase().includes(q));
-        if (!matchesInvoice && !matchesCashier && !matchesCustomer && !matchesItems) return false;
-      }
-
-      return true;
-    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, periodPreset, customStartDate, customEndDate, periodSearchQuery]);
-
-  // Metrik Penjualan Periode
-  const periodMetrics = useMemo(() => {
-    let totalRevenue = 0;
-    let totalProfit = 0;
-    let totalItemsCount = 0;
-    let cashCount = 0;
-    let digitalCount = 0;
-
-    periodTransactions.forEach((t) => {
-      totalRevenue += t.total;
-      totalProfit += t.profit;
-      totalItemsCount += t.items.reduce((s, i) => s + i.qty, 0);
-      if (t.paymentMethod === 'tunai') cashCount++;
-      else digitalCount++;
-    });
-
-    const txCount = periodTransactions.length;
-    const avgOrderValue = txCount > 0 ? Math.round(totalRevenue / txCount) : 0;
-    const marginPercent = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : '0';
-
-    return {
-      totalRevenue,
-      totalProfit,
-      totalItemsCount,
-      txCount,
-      avgOrderValue,
-      cashCount,
-      digitalCount,
-      marginPercent,
-    };
-  }, [periodTransactions]);
-
-  // Rangkuman Agregasi Per Hari dalam Periode
-  const periodDailySummary = useMemo(() => {
-    const summaryMap: Record<
-      string,
-      {
-        dateStr: string;
-        txCount: number;
-        revenue: number;
-        profit: number;
-        itemsCount: number;
-        cashRevenue: number;
-        digitalRevenue: number;
-      }
-    > = {};
-
-    periodTransactions.forEach((t) => {
-      const dateKey = new Date(t.date).toISOString().split('T')[0];
-      if (!summaryMap[dateKey]) {
-        summaryMap[dateKey] = {
-          dateStr: dateKey,
-          txCount: 0,
-          revenue: 0,
-          profit: 0,
-          itemsCount: 0,
-          cashRevenue: 0,
-          digitalRevenue: 0,
-        };
-      }
-      summaryMap[dateKey].txCount += 1;
-      summaryMap[dateKey].revenue += t.total;
-      summaryMap[dateKey].profit += t.profit;
-      summaryMap[dateKey].itemsCount += t.items.reduce((s, i) => s + i.qty, 0);
-      if (t.paymentMethod === 'tunai') summaryMap[dateKey].cashRevenue += t.total;
-      else summaryMap[dateKey].digitalRevenue += t.total;
-    });
-
-    return Object.values(summaryMap).sort(
-      (a, b) => new Date(b.dateStr).getTime() - new Date(a.dateStr).getTime()
-    );
-  }, [periodTransactions]);
-
-  // Peringkat Produk Terlaris dalam Periode Terpilih
-  const topProductsInPeriod = useMemo(() => {
-    const prodMap: Record<string, { name: string; category: string; qty: number; revenue: number }> = {};
-    periodTransactions.forEach((t) => {
-      t.items.forEach((item) => {
-        const id = item.product.id;
-        if (!prodMap[id]) {
-          prodMap[id] = {
-            name: item.product.name,
-            category: item.product.category,
-            qty: 0,
-            revenue: 0,
-          };
-        }
-        prodMap[id].qty += item.qty;
-        prodMap[id].revenue += item.product.sellPrice * item.qty;
-      });
-    });
-
-    return Object.values(prodMap)
-      .sort((a, b) => b.qty - a.qty)
-      .slice(0, 5);
-  }, [periodTransactions]);
-
-  // =========================================================================
-  // STATE TAB 3 & 4: SALDO KAS & PENGELUARAN
-  // =========================================================================
-  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
-  const [expenseCategoryFilter, setExpenseCategoryFilter] = useState<'all' | ExpenseCategory>('all');
-  const [expenseSearchQuery, setExpenseSearchQuery] = useState('');
-  const [deleteExpenseConfirmId, setDeleteExpenseConfirmId] = useState<string | null>(null);
-
-  // Modal Kas
-  const [isCashModalOpen, setIsCashModalOpen] = useState(false);
-  const [editingCashRecord, setEditingCashRecord] = useState<DailyCashRecord | null>(null);
-  const [cashModalMode, setCashModalMode] = useState<'edit-today' | 'edit-record' | 'add-record'>('edit-today');
-
-  const [formDate, setFormDate] = useState('');
-  const [formCashierName, setFormCashierName] = useState('');
-  const [formInitialCash, setFormInitialCash] = useState<number>(0);
-  const [formActualCash, setFormActualCash] = useState<number>(0);
-  const [formCashSales, setFormCashSales] = useState<number>(0);
-  const [formDigitalSales, setFormDigitalSales] = useState<number>(0);
-  const [formCashExpenses, setFormCashExpenses] = useState<number>(0);
-  const [formNotes, setFormNotes] = useState('');
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
-
-  // Filtered Expenses
+  // Filter pengeluaran kas berdasarkan tanggal / rentang periode
   const filteredExpenses = useMemo(() => {
     return expenses.filter((e) => {
-      if (expenseCategoryFilter !== 'all' && e.category !== expenseCategoryFilter) return false;
-      if (expenseSearchQuery.trim()) {
-        const q = expenseSearchQuery.toLowerCase();
-        const matchesNotes = (e.notes || '').toLowerCase().includes(q);
-        const matchesCashier = (e.cashierName || '').toLowerCase().includes(q);
-        const matchesLabel = (e.categoryLabel || '').toLowerCase().includes(q);
-        if (!matchesNotes && !matchesCashier && !matchesLabel) return false;
+      const eDay = new Date(e.date).toISOString().split('T')[0];
+      if (dateMode === 'harian') {
+        return eDay === selectedDate;
+      } else {
+        return eDay >= startDate && eDay <= endDate;
       }
-      return true;
-    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [expenses, expenseCategoryFilter, expenseSearchQuery]);
+    });
+  }, [expenses, dateMode, selectedDate, startDate, endDate]);
 
-  const expenseTotalAmount = useMemo(() => {
+  // Rekaman Daily Cash Record untuk tanggal terpilih
+  const currentDailyCashRecord = useMemo(() => {
+    return dailyCashHistory.find(
+      (r) => new Date(r.date).toISOString().split('T')[0] === selectedDate
+    );
+  }, [dailyCashHistory, selectedDate]);
+
+  // Perhitungan Keuangan Harian
+  const dayCashSales = useMemo(() => {
+    return filteredTransactions
+      .filter((t) => t.paymentMethod === 'tunai')
+      .reduce((sum, t) => sum + t.total, 0);
+  }, [filteredTransactions]);
+
+  const dayDigitalSales = useMemo(() => {
+    return filteredTransactions
+      .filter((t) => t.paymentMethod !== 'tunai')
+      .reduce((sum, t) => sum + t.total, 0);
+  }, [filteredTransactions]);
+
+  const dayCashExpenses = useMemo(() => {
     return filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
   }, [filteredExpenses]);
 
-  // Kas Laci Hari Ini
-  const todayCashSummary = useMemo(() => {
-    const nowStr = getTodayISO();
-    let cashSales = 0;
-    let digitalSales = 0;
-    let todayExpenses = 0;
-
-    transactions.forEach((t) => {
-      if (t.date.split('T')[0] === nowStr) {
-        if (t.paymentMethod === 'tunai') cashSales += t.total;
-        else digitalSales += t.total;
-      }
-    });
-
-    expenses.forEach((e) => {
-      if (e.date.split('T')[0] === nowStr) todayExpenses += e.amount;
-    });
-
-    const initial = currentShift?.initialCash || 0;
-    const expected = initial + cashSales - todayExpenses;
-    const actual = currentShift?.actualCash ?? expected;
-    const difference = actual - expected;
-
-    return {
-      initial,
-      cashSales,
-      digitalSales,
-      todayExpenses,
-      expected,
-      actual,
-      difference,
-      isOpen: currentShift?.isOpen ?? true,
-      cashierName: currentShift?.cashierName || currentUser.name,
-      notes: currentShift?.notes || '',
-    };
-  }, [currentShift, currentUser.name, transactions, expenses]);
-
-  // Modal Kas handlers
-  const handleOpenEditToday = () => {
-    setCashModalMode('edit-today');
-    setEditingCashRecord(null);
-    setFormDate(getTodayISO());
-    setFormCashierName(todayCashSummary.cashierName);
-    setFormInitialCash(todayCashSummary.initial);
-    setFormActualCash(todayCashSummary.actual);
-    setFormCashSales(todayCashSummary.cashSales);
-    setFormDigitalSales(todayCashSummary.digitalSales);
-    setFormCashExpenses(todayCashSummary.todayExpenses);
-    setFormNotes(todayCashSummary.notes);
-    setIsCashModalOpen(true);
-  };
-
-  const handleOpenEditRecord = (record: DailyCashRecord) => {
-    setCashModalMode('edit-record');
-    setEditingCashRecord(record);
-    setFormDate(record.date.split('T')[0]);
-    setFormCashierName(record.cashierName);
-    setFormInitialCash(record.initialCash);
-    setFormActualCash(record.actualCash);
-    setFormCashSales(record.cashSales);
-    setFormDigitalSales(record.digitalSales);
-    setFormCashExpenses(record.cashExpenses || 0);
-    setFormNotes(record.notes || '');
-    setIsCashModalOpen(true);
-  };
-
-  const handleOpenAddRecord = () => {
-    setCashModalMode('add-record');
-    setEditingCashRecord(null);
-    setFormDate(getTodayISO());
-    setFormCashierName(currentUser.name);
-    setFormInitialCash(0);
-    setFormActualCash(0);
-    setFormCashSales(0);
-    setFormDigitalSales(0);
-    setFormCashExpenses(0);
-    setFormNotes('');
-    setIsCashModalOpen(true);
-  };
-
-  const handleSaveCashModal = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (cashModalMode === 'edit-today') {
-      updateShiftBalances(formInitialCash, formActualCash, formNotes);
-      showToast('Saldo kas laci hari ini berhasil diperbarui.');
-    } else if (cashModalMode === 'edit-record' && editingCashRecord?.id) {
-      const expectedCash = formInitialCash + formCashSales - formCashExpenses;
-      const difference = formActualCash - expectedCash;
-      addOrUpdateDailyCashRecord({
-        id: editingCashRecord.id,
-        date: new Date(formDate).toISOString(),
-        cashierName: formCashierName.trim() || currentUser.name,
-        initialCash: formInitialCash,
-        cashSales: formCashSales,
-        digitalSales: formDigitalSales,
-        cashExpenses: formCashExpenses,
-        expectedCash,
-        actualCash: formActualCash,
-        difference,
-        isOpen: editingCashRecord.isOpen ?? false,
-        notes: formNotes.trim(),
-      });
-      showToast('Riwayat kas tanggal berhasil diperbarui.');
+  // Nilai Saldo Awal aktif
+  const activeInitialCash = useMemo(() => {
+    if (dateMode === 'harian') {
+      if (currentDailyCashRecord) return currentDailyCashRecord.initialCash;
+      if (selectedDate === todayISO && currentShift) return currentShift.initialCash;
+      return 0;
     } else {
-      const expectedCash = formInitialCash + formCashSales - formCashExpenses;
-      const difference = formActualCash - expectedCash;
-      addOrUpdateDailyCashRecord({
-        date: new Date(formDate).toISOString(),
-        cashierName: formCashierName.trim() || currentUser.name,
-        initialCash: formInitialCash,
-        cashSales: formCashSales,
-        digitalSales: formDigitalSales,
-        cashExpenses: formCashExpenses,
-        expectedCash,
-        actualCash: formActualCash,
-        difference,
-        isOpen: false,
-        notes: formNotes.trim(),
+      // Pada mode periode: akumulasi saldo awal seluruh hari yang tercatat
+      const recordsInRange = dailyCashHistory.filter((r) => {
+        const d = new Date(r.date).toISOString().split('T')[0];
+        return d >= startDate && d <= endDate;
       });
-      showToast('Catatan kas harian baru berhasil ditambahkan.');
+      return recordsInRange.reduce((sum, r) => sum + r.initialCash, 0);
     }
-    setIsCashModalOpen(false);
+  }, [dateMode, currentDailyCashRecord, selectedDate, todayISO, currentShift, dailyCashHistory, startDate, endDate]);
+
+  // Nilai Saldo Kas Akhir aktif
+  const activeClosingCash = useMemo(() => {
+    if (dateMode === 'harian') {
+      if (currentDailyCashRecord && typeof currentDailyCashRecord.actualCash === 'number') {
+        return currentDailyCashRecord.actualCash;
+      }
+      if (selectedDate === todayISO && currentShift && typeof currentShift.actualCash === 'number') {
+        return currentShift.actualCash;
+      }
+      return null;
+    } else {
+      const recordsInRange = dailyCashHistory.filter((r) => {
+        const d = new Date(r.date).toISOString().split('T')[0];
+        return d >= startDate && d <= endDate;
+      });
+      return recordsInRange.reduce((sum, r) => sum + (r.actualCash || 0), 0);
+    }
+  }, [dateMode, currentDailyCashRecord, selectedDate, todayISO, currentShift, dailyCashHistory, startDate, endDate]);
+
+  // Apakah sudah tutup kas
+  const isCashClosed = useMemo(() => {
+    if (dateMode === 'harian') {
+      if (currentDailyCashRecord) return !currentDailyCashRecord.isOpen && typeof currentDailyCashRecord.actualCash === 'number';
+      if (selectedDate === todayISO && currentShift) return !currentShift.isOpen;
+      return false;
+    }
+    return false;
+  }, [dateMode, currentDailyCashRecord, selectedDate, todayISO, currentShift]);
+
+  // Kas Seluruhnya Seharusnya di Laci (Fisik)
+  // Rumus: Saldo Awal + Penjualan Tunai - Pengeluaran Kas
+  const expectedTotalCash = useMemo(() => {
+    return Math.max(0, activeInitialCash + dayCashSales - dayCashExpenses);
+  }, [activeInitialCash, dayCashSales, dayCashExpenses]);
+
+  // Selisih Kas
+  const cashDifference = useMemo(() => {
+    if (activeClosingCash === null) return 0;
+    return activeClosingCash - expectedTotalCash;
+  }, [activeClosingCash, expectedTotalCash]);
+
+  // Highlight Metrik Penjualan (Part 2)
+  const totalItemsSold = useMemo(() => {
+    return filteredTransactions.reduce(
+      (sum, t) => sum + t.items.reduce((iSum, item) => iSum + item.qty, 0),
+      0
+    );
+  }, [filteredTransactions]);
+
+  const totalRevenue = useMemo(() => {
+    return filteredTransactions.reduce((sum, t) => sum + t.total, 0);
+  }, [filteredTransactions]);
+
+  const totalCost = useMemo(() => {
+    return filteredTransactions.reduce((sum, t) => sum + (t.costTotal || 0), 0);
+  }, [filteredTransactions]);
+
+  const totalProfit = useMemo(() => {
+    return filteredTransactions.reduce((sum, t) => sum + (t.profit || 0), 0);
+  }, [filteredTransactions]);
+
+  const marginPercentage = useMemo(() => {
+    if (totalRevenue <= 0) return 0;
+    return ((totalProfit / totalRevenue) * 100).toFixed(1);
+  }, [totalRevenue, totalProfit]);
+
+  // Buka Modal Saldo Awal
+  const handleOpenInitialCashModal = () => {
+    setInitialCashInput(activeInitialCash > 0 ? String(activeInitialCash) : '');
+    setInitialCashNotes(currentDailyCashRecord?.notes || '');
+    setIsInitialCashModalOpen(true);
   };
 
-  const handleShareWhatsApp = (tx: Transaction) => {
-    let text = `*STRUK RESMI ${storeProfile.name.toUpperCase()}*\n`;
-    text += `No Faktur: ${tx.invoiceNo}\n`;
-    text += `Waktu: ${formatDateTime(tx.date)}\n`;
-    text += `Kasir: ${tx.cashierName}\n`;
-    text += `--------------------------------\n`;
-    tx.items.forEach((i) => {
-      text += `${i.product.name} (x${i.qty} @${formatRupiah(i.product.sellPrice)}) = ${formatRupiah(i.qty * i.product.sellPrice)}\n`;
-    });
-    text += `--------------------------------\n`;
-    text += `*TOTAL: ${formatRupiah(tx.total)}*\n`;
-    text += `Metode Bayar: ${tx.paymentMethod.toUpperCase()}\n`;
-    text += `Terima kasih.`;
+  // Simpan Saldo Awal
+  const handleSaveInitialCash = (e: React.FormEvent) => {
+    e.preventDefault();
+    const num = parseFloat(initialCashInput.replace(/[^\d]/g, '')) || 0;
+    const existing = currentDailyCashRecord;
+    const expected = num + dayCashSales - dayCashExpenses;
+    const actual = existing?.actualCash ?? 0;
+    const diff = existing && !existing.isOpen ? actual - expected : 0;
 
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
+    addOrUpdateDailyCashRecord({
+      id: existing?.id,
+      date: existing ? existing.date : new Date(selectedDate + 'T08:00:00').toISOString(),
+      cashierName: existing?.cashierName || currentUser.name || 'Owner',
+      initialCash: num,
+      cashSales: dayCashSales,
+      digitalSales: dayDigitalSales,
+      cashExpenses: dayCashExpenses,
+      expectedCash: expected,
+      actualCash: actual,
+      difference: diff,
+      isOpen: existing ? existing.isOpen : true,
+      notes: initialCashNotes || existing?.notes || 'Saldo awal diatur pemilik toko',
+    });
+
+    if (selectedDate === todayISO && updateShiftBalances) {
+      updateShiftBalances(num, currentShift?.actualCash ?? 0, initialCashNotes);
+    }
+
+    setIsInitialCashModalOpen(false);
+  };
+
+  // Buka Modal Saldo Akhir
+  const handleOpenClosingCashModal = () => {
+    setClosingCashInput(activeClosingCash !== null && activeClosingCash > 0 ? String(activeClosingCash) : String(expectedTotalCash));
+    setClosingCashNotes(currentDailyCashRecord?.notes || '');
+    setIsClosingCashModalOpen(true);
+  };
+
+  // Simpan Saldo Akhir (Tutup Kas)
+  const handleSaveClosingCash = (e: React.FormEvent) => {
+    e.preventDefault();
+    const num = parseFloat(closingCashInput.replace(/[^\d]/g, '')) || 0;
+    const existing = currentDailyCashRecord;
+    const init = activeInitialCash;
+    const expected = init + dayCashSales - dayCashExpenses;
+    const diff = num - expected;
+
+    addOrUpdateDailyCashRecord({
+      id: existing?.id,
+      date: existing ? existing.date : new Date(selectedDate + 'T17:00:00').toISOString(),
+      cashierName: existing?.cashierName || currentUser.name || 'Kasir',
+      initialCash: init,
+      cashSales: dayCashSales,
+      digitalSales: dayDigitalSales,
+      cashExpenses: dayCashExpenses,
+      expectedCash: expected,
+      actualCash: num,
+      difference: diff,
+      isOpen: false, // Ditutup
+      notes: closingCashNotes || (diff === 0 ? 'Tutup kas seimbang' : `Selisih kas ${diff > 0 ? '+' : ''}${formatRupiah(diff)}`),
+    });
+
+    if (selectedDate === todayISO && updateShiftBalances) {
+      updateShiftBalances(init, num, closingCashNotes);
+    }
+
+    setIsClosingCashModalOpen(false);
+  };
+
+  // Ekspor Excel Pembukuan Langsung (Itemized + Transaksi Komprehensif)
+  const handleExportBookkeepingExcel = () => {
+    let csvContent = '\uFEFF'; // UTF-8 BOM untuk Microsoft Excel
+    const headers = [
+      'No Faktur',
+      'Tanggal & Jam',
+      'Kasir',
+      'Pelanggan',
+      'Metode Pembayaran',
+      'Rincian Produk Terjual',
+      'Total Qty (pcs)',
+      'Total Omset (Rp)',
+      'Total HPP Modal (Rp)',
+      'Laba Kotor (Rp)',
+      'Margin Laba (%)',
+      'Jumlah Diterima (Rp)',
+      'Kembalian (Rp)',
+      'Catatan',
+    ];
+
+    csvContent += headers.map((h) => `"${h}"`).join(',') + '\r\n';
+
+    filteredTransactions.forEach((tx) => {
+      const itemsDetail = tx.items
+        .map((i) => `${i.product.name} (x${i.qty} @${i.product.sellPrice})`)
+        .join('; ');
+      const totalQty = tx.items.reduce((sum, i) => sum + i.qty, 0);
+      const profit = tx.profit || 0;
+      const margin = tx.total > 0 ? ((profit / tx.total) * 100).toFixed(1) : '0';
+
+      const row = [
+        tx.invoiceNo,
+        formatDateTime(tx.date),
+        tx.cashierName,
+        tx.customerName || 'Pelanggan Umum',
+        tx.paymentMethod.toUpperCase(),
+        itemsDetail.replace(/"/g, '""'),
+        totalQty,
+        tx.total,
+        tx.costTotal || 0,
+        profit,
+        `${margin}%`,
+        tx.amountPaid,
+        tx.change,
+        (tx.notes || '-').replace(/"/g, '""'),
+      ];
+
+      csvContent += row.map((val) => `"${val}"`).join(',') + '\r\n';
+    });
+
+    // Buat Blob dan download otomatis
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    const dateLabel = dateMode === 'harian' ? selectedDate : `${startDate}_sd_${endDate}`;
+    link.setAttribute(
+      'download',
+      `Pembukuan_Penjualan_${storeProfile.name.replace(/\s+/g, '_')}_${dateLabel}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="space-y-4 sm:space-y-5 text-black">
-      {/* Toast Alert */}
-      {toastMessage && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-2 px-4 py-3 bg-[#800020] text-white text-xs font-bold rounded-2xl shadow-xl border border-pink-300 animate-in fade-in duration-200">
-          <CheckCircle2 className="w-4 h-4 text-pink-200 shrink-0" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
-      {/* HEADER UTAMA & NAVIGASI 4 TAB */}
-      <div className="bg-white rounded-3xl border border-[#FCE4E8] p-4 sm:p-5 shadow-sm space-y-3.5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="space-y-4 text-black pb-12">
+      {/* =========================================================================
+          PART 1: PENGATUR TANGGAL & 3 IKON TERPISAH (SALDO AWAL, AKHIR, KAS SELURUHNYA)
+          ========================================================================= */}
+      <div className="bg-white/95 backdrop-blur-md p-3.5 sm:p-4 rounded-3xl border border-[#FCE4E8] shadow-2xs space-y-3.5">
+        {/* Header Bar Kontrol Tanggal / Periode */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-3 border-b border-[#FCE4E8]/80">
           <div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-[#FCE8EB] text-[#800020] flex items-center justify-center font-black">
-                <Receipt className="w-4 h-4" />
-              </div>
-              <h1 className="text-base sm:text-lg font-black text-black">
-                Rekapitulasi Penjualan &amp; Kas Toko
-              </h1>
-            </div>
-            <p className="text-xs text-stone-600 font-medium mt-0.5">
-              Pantau transaksi per transaksi tiap hari, laporan periode, saldo kas laci, dan pembelian stok.
+            <h2 className="text-base sm:text-lg font-black text-black tracking-tight flex items-center gap-2">
+              <span>Rekap Penjualan &amp; Pembukuan Kas</span>
+            </h2>
+            <p className="text-xs text-stone-700 mt-0.5">
+              Atur tanggal untuk memantau saldo harian atau akumulasi kas periode tertentu.
             </p>
           </div>
 
-          {onOpenShiftModal && (
-            <button
-              onClick={onOpenShiftModal}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#FFF5F7] hover:bg-[#FCE8EB] text-[#800020] border border-[#FCE4E8] transition-colors flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-[#800020]" />
-              <span>Shift Kasir &amp; Laci</span>
-            </button>
-          )}
+          {/* Pengatur Tanggal & Mode Switcher */}
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            {/* Toggle Mode: Harian vs Periode */}
+            <div className="flex items-center p-0.5 bg-[#FFF0F3] rounded-xl border border-[#F8CCD4] shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setDateMode('harian')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  dateMode === 'harian'
+                    ? 'bg-[#800020] text-white shadow-2xs'
+                    : 'text-stone-700 hover:text-black'
+                }`}
+              >
+                Harian
+              </button>
+              <button
+                type="button"
+                onClick={() => setDateMode('periode')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  dateMode === 'periode'
+                    ? 'bg-[#800020] text-white shadow-2xs'
+                    : 'text-stone-700 hover:text-black'
+                }`}
+              >
+                Periode Tertentu
+              </button>
+            </div>
+
+            {/* Kontrol Harian */}
+            {dateMode === 'harian' ? (
+              <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-xl border border-[#FCE4E8] shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => handleShiftDay(-1)}
+                  className="p-1 rounded-lg text-stone-700 hover:text-black hover:bg-[#FFF5F7] transition-colors cursor-pointer"
+                  title="Hari Sebelumnya"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                <div className="relative flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-[#800020] shrink-0" />
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="text-xs font-bold text-black bg-transparent border-none focus:outline-none cursor-pointer"
+                  />
+                  <span className="text-[11px] font-semibold text-stone-700 hidden lg:inline">
+                    ({formatIndonesianDate(selectedDate)})
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleShiftDay(1)}
+                  className="p-1 rounded-lg text-stone-700 hover:text-black hover:bg-[#FFF5F7] transition-colors cursor-pointer"
+                  title="Hari Berikutnya"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+
+                {selectedDate !== todayISO && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDate(todayISO)}
+                    className="ml-1 px-2 py-0.5 text-[10px] font-extrabold bg-[#FFF0F3] text-[#800020] border border-[#F8CCD4] rounded-md hover:bg-[#800020] hover:text-white transition-colors cursor-pointer"
+                  >
+                    Hari Ini
+                  </button>
+                )}
+              </div>
+            ) : (
+              /* Kontrol Periode Tertentu */
+              <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex items-center gap-1 bg-white px-2.5 py-1 rounded-xl border border-[#FCE4E8] text-xs shadow-2xs">
+                  <span className="text-[11px] font-semibold text-stone-700">Mulai:</span>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="font-bold text-black bg-transparent focus:outline-none cursor-pointer"
+                  />
+                  <span className="text-stone-700 mx-1">s/d</span>
+                  <span className="text-[11px] font-semibold text-stone-700">Akhir:</span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="font-bold text-black bg-transparent focus:outline-none cursor-pointer"
+                  />
+                </div>
+
+                {/* Preset Chips */}
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleSetPresetPeriod(7)}
+                    className="px-2 py-1 text-[11px] font-bold rounded-lg bg-white border border-[#FCE4E8] text-stone-700 hover:bg-[#FFF5F7] hover:text-[#800020] transition-colors cursor-pointer"
+                  >
+                    7 Hari
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSetPresetPeriod(30)}
+                    className="px-2 py-1 text-[11px] font-bold rounded-lg bg-white border border-[#FCE4E8] text-stone-700 hover:bg-[#FFF5F7] hover:text-[#800020] transition-colors cursor-pointer"
+                  >
+                    30 Hari
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSetThisMonth}
+                    className="px-2 py-1 text-[11px] font-bold rounded-lg bg-white border border-[#FCE4E8] text-stone-700 hover:bg-[#FFF5F7] hover:text-[#800020] transition-colors cursor-pointer"
+                  >
+                    Bulan Ini
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* 4 Tab Navigasi: Rapi, Jelas, & Kontras Tinggi */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2 p-1.5 bg-[#FFF0F3] rounded-2xl border border-[#FCE4E8]">
-          {/* Tab 1: Rekap Per Hari */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('daily-recap')}
-            className={`py-2 px-2.5 sm:px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeTab === 'daily-recap'
-                ? 'bg-[#800020] text-white shadow-xs font-black'
-                : 'bg-white/80 text-black hover:bg-white hover:text-[#800020]'
-            }`}
-          >
-            <Clock className="w-3.5 h-3.5" />
-            <span>Rekap Per Hari</span>
-          </button>
+        {/* 3 ICON TERPISAH (SALDO AWAL, SALDO AKHIR, KAS SELURUHNYA) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* 1. IKON / KARTU SALDO AWAL */}
+          <div className="p-3.5 rounded-2xl border border-[#F8CCD4] bg-gradient-to-br from-[#FFF5F7] to-white flex flex-col justify-between shadow-2xs hover:shadow-xs transition-shadow">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-stone-700">
+                  {dateMode === 'harian' ? 'Saldo Kas Awal' : 'Total Saldo Awal'}
+                </span>
+                <div className="text-lg sm:text-xl font-black font-mono text-[#800020] mt-1">
+                  {formatRupiah(activeInitialCash)}
+                </div>
+                <p className="text-[11px] text-stone-700 mt-0.5">
+                  {dateMode === 'harian'
+                    ? 'Modal kembalian kasir pagi hari'
+                    : 'Akumulasi kas awal periode terpilih'}
+                </p>
+              </div>
 
-          {/* Tab 2: Rekap Periode */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('period-recap')}
-            className={`py-2 px-2.5 sm:px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeTab === 'period-recap'
-                ? 'bg-[#800020] text-white shadow-xs font-black'
-                : 'bg-white/80 text-black hover:bg-white hover:text-[#800020]'
-            }`}
-          >
-            <Calendar className="w-3.5 h-3.5" />
-            <span>Rekap Periode Tertentu</span>
-          </button>
+              {/* Ikon Khusus Saldo Awal */}
+              <div className="w-10 h-10 rounded-2xl bg-[#FFF0F3] border border-[#F8CCD4] text-[#800020] flex items-center justify-center shrink-0 shadow-2xs">
+                <Wallet className="w-5 h-5" />
+              </div>
+            </div>
 
-          {/* Tab 3: Saldo Kas Harian */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('cash-history')}
-            className={`py-2 px-2.5 sm:px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeTab === 'cash-history'
-                ? 'bg-[#800020] text-white shadow-xs font-black'
-                : 'bg-white/80 text-black hover:bg-white hover:text-[#800020]'
-            }`}
-          >
-            <History className="w-3.5 h-3.5" />
-            <span>Saldo Kas Laci</span>
-          </button>
+            {dateMode === 'harian' && (
+              <div className="mt-3 pt-2.5 border-t border-[#F8CCD4]/60 flex items-center justify-between">
+                <span className="text-[10px] text-stone-700 font-medium">
+                  {activeInitialCash > 0 ? 'Sudah ditentukan' : 'Belum ditentukan'}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleOpenInitialCashModal}
+                  className="px-2.5 py-1 text-xs font-bold rounded-xl bg-white border border-[#F8CCD4] text-[#800020] hover:bg-[#800020] hover:text-white transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                  title="Input atau ubah nominal kas awal"
+                >
+                  <Edit3 className="w-3 h-3" />
+                  <span>Input Saldo Awal</span>
+                </button>
+              </div>
+            )}
+          </div>
 
-          {/* Tab 4: Pengeluaran Kas Toko */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('expenses')}
-            className={`py-2 px-2.5 sm:px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeTab === 'expenses'
-                ? 'bg-[#800020] text-white shadow-xs font-black'
-                : 'bg-white/80 text-black hover:bg-white hover:text-[#800020]'
-            }`}
-          >
-            <ArrowDownCircle className="w-3.5 h-3.5" />
-            <span>Pengeluaran Toko</span>
-          </button>
+          {/* 2. IKON / KARTU SALDO AKHIR */}
+          <div className="p-3.5 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/70 to-white flex flex-col justify-between shadow-2xs hover:shadow-xs transition-shadow">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-stone-700">
+                    {dateMode === 'harian' ? 'Saldo Kas Akhir' : 'Total Kas Akhir Fisik'}
+                  </span>
+                  {dateMode === 'harian' && (
+                    <span
+                      className={`text-[9px] px-1.5 py-0.2 rounded-md font-extrabold ${
+                        isCashClosed
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-stone-100 text-stone-700'
+                      }`}
+                    >
+                      {isCashClosed ? 'Tutup Kas' : 'Belum Ditutup'}
+                    </span>
+                  )}
+                </div>
+
+                <div className="text-lg sm:text-xl font-black font-mono text-amber-900 mt-1">
+                  {activeClosingCash !== null
+                    ? formatRupiah(activeClosingCash)
+                    : 'Belum Diinput'}
+                </div>
+
+                <p className="text-[11px] text-stone-700 mt-0.5">
+                  {dateMode === 'harian'
+                    ? isCashClosed
+                      ? cashDifference === 0
+                        ? 'Kas seimbang dengan sistem'
+                        : `Selisih kas ${cashDifference > 0 ? '+' : ''}${formatRupiah(cashDifference)}`
+                      : 'Uang fisik dihitung saat toko tutup'
+                    : 'Total fisik kas yang dilaporkan'}
+                </p>
+              </div>
+
+              {/* Ikon Khusus Saldo Akhir */}
+              <div className="w-10 h-10 rounded-2xl bg-amber-100/80 border border-amber-200 text-amber-800 flex items-center justify-center shrink-0 shadow-2xs">
+                <Lock className="w-5 h-5" />
+              </div>
+            </div>
+
+            {dateMode === 'harian' && (
+              <div className="mt-3 pt-2.5 border-t border-amber-200/60 flex items-center justify-between">
+                <span className="text-[10px] text-stone-700 font-medium">
+                  {isCashClosed ? 'Tutup kas tersimpan' : 'Perlu dihitung saat tutup'}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleOpenClosingCashModal}
+                  className="px-2.5 py-1 text-xs font-bold rounded-xl bg-white border border-amber-300 text-amber-800 hover:bg-amber-700 hover:text-white transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                  title="Input penghitungan kas akhir / tutup kas"
+                >
+                  <Lock className="w-3 h-3" />
+                  <span>Input Kas Akhir</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* 3. IKON / KARTU KAS SELURUHNYA */}
+          <div className="p-3.5 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/70 to-white flex flex-col justify-between shadow-2xs hover:shadow-xs transition-shadow">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-stone-700">
+                  {dateMode === 'harian' ? 'Kas Seluruhnya' : 'Total Kas Bersih'}
+                </span>
+                <div className="text-lg sm:text-xl font-black font-mono text-emerald-900 mt-1">
+                  {formatRupiah(expectedTotalCash)}
+                </div>
+                <p className="text-[11px] text-stone-700 mt-0.5">
+                  Total fisik laci = Awal + Tunai - Pengeluaran
+                </p>
+              </div>
+
+              {/* Ikon Khusus Kas Seluruhnya */}
+              <div className="w-10 h-10 rounded-2xl bg-emerald-100/80 border border-emerald-200 text-emerald-800 flex items-center justify-center shrink-0 shadow-2xs">
+                <Banknote className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="mt-3 pt-2.5 border-t border-emerald-200/60 flex items-center justify-between">
+              <span className="text-[10px] text-stone-700 font-medium">
+                Tunai: {formatRupiah(dayCashSales)}
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsCashSummaryModalOpen(true)}
+                className="px-2.5 py-1 text-xs font-bold rounded-xl bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-700 hover:text-white transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                title="Cek rincian perhitungan uang kas seluruhnya"
+              >
+                <Eye className="w-3 h-3" />
+                <span>Cek Rincian Kas</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ===================================================================
-          TAB 1: REKAP PENJUALAN PER HARI (TRANSAKSI DENGAN DETAIL PRODUK)
-          =================================================================== */}
-      {activeTab === 'daily-recap' && (
-        <div className="space-y-4">
-          {/* Bar Pemilih Hari (Date Selector Yang Sangat Nyaman) */}
-          <div className="bg-white rounded-3xl border border-[#FCE4E8] p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <button
-                type="button"
-                onClick={() => handleShiftDay(-1)}
-                className="p-2 rounded-xl border border-[#FCE4E8] bg-[#FFF5F7] hover:bg-[#FCE8EB] text-black font-bold text-xs transition-colors cursor-pointer"
-                title="Pindah ke Hari Sebelumnya"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              <div className="relative flex-1 sm:flex-initial">
-                <input
-                  type="date"
-                  value={selectedDay}
-                  onChange={(e) => e.target.value && setSelectedDay(e.target.value)}
-                  className="w-full px-3 py-1.5 text-xs font-bold text-black rounded-xl border border-[#FCE4E8] bg-white focus:outline-none focus:ring-1 focus:ring-[#800020]"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleShiftDay(1)}
-                className="p-2 rounded-xl border border-[#FCE4E8] bg-[#FFF5F7] hover:bg-[#FCE8EB] text-black font-bold text-xs transition-colors cursor-pointer"
-                title="Pindah ke Hari Berikutnya"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-
-              {/* Quick Pills */}
-              <button
-                type="button"
-                onClick={() => setSelectedDay(getTodayISO())}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-colors cursor-pointer ${
-                  selectedDay === getTodayISO()
-                    ? 'bg-[#800020] text-white border-[#800020]'
-                    : 'bg-[#FFF5F7] text-black border-[#FCE4E8] hover:bg-[#FCE8EB]'
-                }`}
-              >
-                Hari Ini
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  const d = new Date();
-                  d.setDate(d.getDate() - 1);
-                  setSelectedDay(d.toISOString().split('T')[0]);
-                }}
-                className="px-3 py-1.5 text-xs font-bold rounded-xl border border-[#FCE4E8] bg-[#FFF5F7] text-black hover:bg-[#FCE8EB] transition-colors cursor-pointer hidden sm:inline-block"
-              >
-                Kemarin
-              </button>
-            </div>
-
-            {/* Label Hari Terpilih & Tombol Ekspor */}
-            <div className="flex items-center justify-between md:justify-end gap-2.5 pt-2 md:pt-0 border-t md:border-t-0 border-[#FCE4E8]">
-              <div className="text-left md:text-right">
-                <div className="text-xs font-black text-black">
-                  {formatDateOnly(selectedDay + 'T00:00:00')}
-                </div>
-                <div className="text-[11px] text-stone-500 font-mono">
-                  {dailyTransactions.length} transaksi selesai
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  exportDailyItemizedTransactionsToExcel(
-                    dailyTransactions,
-                    selectedDay,
-                    storeProfile.name
-                  )
-                }
-                disabled={dailyTransactions.length === 0}
-                className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs ${
-                  dailyTransactions.length > 0
-                    ? 'bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer'
-                    : 'bg-stone-200 text-stone-400 cursor-not-allowed'
-                }`}
-                title="Ekspor seluruh transaksi hari ini beserta detail item ke Excel"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>Unduh Excel Hari Ini</span>
-              </button>
-            </div>
+      {/* =========================================================================
+          PART 2: TABEL KHUSUS RINGKAS HIGHLIGHT (TIDAK TERLALU BESAR)
+          Jumlah Produk Terjual, Estimasi Laba Kotor, Total Omset
+          ========================================================================= */}
+      <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-[#FCE4E8] p-3 sm:p-3.5 shadow-2xs">
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#FCE4E8]/70">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-black">
+            <Sparkles className="w-3.5 h-3.5 text-[#800020]" />
+            <span>
+              Highlight Ringkasan{' '}
+              {dateMode === 'harian'
+                ? `Hari Ini (${formatIndonesianDate(selectedDate)})`
+                : `Periode (${startDate} s/d ${endDate})`}
+            </span>
           </div>
+          <span className="text-[11px] text-stone-700 font-medium">
+            {filteredTransactions.length} Transaksi Selesai
+          </span>
+        </div>
 
-          {/* 4 Kartu KPI Hari Terpilih */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-            {/* 1. Omzet Penjualan Hari Ini */}
-            <div className="bg-white p-3.5 sm:p-4 rounded-3xl border border-[#FCE4E8] shadow-xs">
-              <span className="text-[11px] font-bold text-stone-600 block">
-                Total Omzet Hari Ini
-              </span>
-              <div className="text-base sm:text-xl font-black font-mono text-[#800020] mt-1">
-                {formatRupiah(dailyMetrics.revenue)}
-              </div>
-              <div className="text-[10px] text-stone-500 mt-0.5">
-                {dailyMetrics.txCount} nota penjualan
-              </div>
-            </div>
-
-            {/* 2. Estimasi Laba Bersih Hari Ini */}
-            <div className="bg-white p-3.5 sm:p-4 rounded-3xl border border-[#FCE4E8] shadow-xs">
-              <span className="text-[11px] font-bold text-stone-600 block">
-                Estimasi Laba Kotor
-              </span>
-              <div className="text-base sm:text-xl font-black font-mono text-emerald-800 mt-1">
-                {formatRupiah(dailyMetrics.profit)}
-              </div>
-              <div className="text-[10px] text-emerald-700 font-bold mt-0.5">
-                Margin profit {dailyMetrics.marginPercent}%
-              </div>
-            </div>
-
-            {/* 3. Total Barang Terjual */}
-            <div className="bg-white p-3.5 sm:p-4 rounded-3xl border border-[#FCE4E8] shadow-xs">
-              <span className="text-[11px] font-bold text-stone-600 block">
-                Produk Terjual
-              </span>
-              <div className="text-base sm:text-xl font-black font-mono text-black mt-1">
-                {dailyMetrics.totalItemsCount} <span className="text-xs font-normal">item</span>
-              </div>
-              <div className="text-[10px] text-stone-500 mt-0.5">
-                {dailyMetrics.cashRevenue > 0 && `Tunai: ${formatRupiah(dailyMetrics.cashRevenue)}`}
-              </div>
-            </div>
-
-            {/* 4. Arus Kas Bersih Toko Hari Ini */}
-            <div className="bg-white p-3.5 sm:p-4 rounded-3xl border border-[#FCE4E8] shadow-xs">
-              <span className="text-[11px] font-bold text-stone-600 block">
-                Kas Masuk vs Keluar
-              </span>
-              <div className="text-base sm:text-xl font-black font-mono text-black mt-1">
-                {formatRupiah(dailyMetrics.netCash)}
-              </div>
-              <div className="text-[10px] text-stone-500 mt-0.5">
-                Pengeluaran kas: -{formatRupiah(dailyMetrics.dayExpenses)}
-              </div>
-            </div>
-          </div>
-
-          {/* Pencarian dalam Hari Terpilih */}
-          <div className="bg-white rounded-2xl border border-[#FCE4E8] p-2.5 shadow-2xs flex items-center justify-between gap-2">
-            <div className="relative flex-1">
-              <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Cari transaksi berdasarkan No Faktur, nama produk, kasir, atau pelanggan..."
-                value={dailySearchQuery}
-                onChange={(e) => setDailySearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#FFF5F7] border border-[#FCE4E8] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#800020] text-black placeholder-stone-400"
-              />
-            </div>
-            {dailySearchQuery && (
-              <button
-                onClick={() => setDailySearchQuery('')}
-                className="px-2 py-1 text-xs text-stone-500 hover:text-black font-bold cursor-pointer"
-              >
-                Reset
-              </button>
-            )}
-          </div>
-
-          {/* DAFTAR TRANSAKSI PER TRANSAKSI DENGAN DETAIL PRODUK YANG DIBELI */}
-          {dailyTransactions.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-[#FCE4E8] p-10 text-center shadow-xs">
-              <div className="w-14 h-14 rounded-full bg-[#FFF5F7] border border-[#FCE4E8] flex items-center justify-center mx-auto mb-3">
-                <Receipt className="w-7 h-7 text-[#800020]" />
-              </div>
-              <h3 className="text-base font-black text-black">
-                Tidak Ada Transaksi Pada {formatDateOnly(selectedDay + 'T00:00:00')}
-              </h3>
-              <p className="text-xs text-stone-600 mt-1 max-w-sm mx-auto">
-                Belum ada transaksi yang tercatat pada tanggal ini. Pilih tanggal lain atau buka kasir POS untuk melayani pelanggan.
-              </p>
-              <div className="mt-4 flex items-center justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedDay(getTodayISO())}
-                  className="px-4 py-2 rounded-xl bg-[#800020] text-white text-xs font-bold hover:bg-[#660019] cursor-pointer"
-                >
-                  Lihat Hari Ini
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold text-stone-700 px-1">
-                <span>Rincian {dailyTransactions.length} Transaksi Hari Ini:</span>
-                <span className="text-[11px] text-[#800020]">Semua rincian barang &amp; harga tercantum di bawah</span>
-              </div>
-
-              {dailyTransactions.map((tx, txIndex) => {
-                const totalItemPcs = tx.items.reduce((sum, item) => sum + item.qty, 0);
-
-                return (
-                  <div
-                    key={tx.id}
-                    className="bg-white rounded-3xl border border-[#FCE4E8] shadow-xs overflow-hidden transition-all hover:border-[#800020]/40"
-                  >
-                    {/* Header Transaksi */}
-                    <div className="p-3.5 sm:p-4 bg-[#FFF8F8] border-b border-[#FCE4E8] flex flex-wrap items-center justify-between gap-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <span className="w-6 h-6 rounded-lg bg-[#800020] text-white font-mono text-xs font-bold flex items-center justify-center shrink-0">
-                          {dailyTransactions.length - txIndex}
-                        </span>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-black text-xs sm:text-sm text-black">
-                              {tx.invoiceNo}
-                            </span>
-                            <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4] uppercase">
-                              {tx.paymentMethod === 'tunai' ? 'Tunai' : tx.paymentMethod.toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="text-[11px] text-stone-600 flex items-center gap-2 mt-0.5">
-                            <span className="flex items-center gap-1 font-mono">
-                              <Clock className="w-3 h-3 text-stone-400" />
-                              {formatTimeOnly(tx.date)} WIB
-                            </span>
-                            <span>•</span>
-                            <span>Kasir: <strong className="text-black">{tx.cashierName}</strong></span>
-                            <span>•</span>
-                            <span>Pelanggan: <strong className="text-black">{tx.customerName || 'Umum'}</strong></span>
-                          </div>
-                        </div>
+        {/* Tabel Ringkas Highlight */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-[#FFF5F7] text-stone-800 text-[11px] font-bold">
+                <th className="py-2 px-3 text-left rounded-l-xl">Jumlah Produk Terjual</th>
+                <th className="py-2 px-3 text-left">Estimasi Laba Kotor</th>
+                <th className="py-2 px-3 text-right rounded-r-xl">Total Omset Penjualan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="divide-x divide-stone-100">
+                {/* 1. Jumlah Produk Terjual */}
+                <td className="py-2.5 px-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-[#FFF0F3] text-[#800020] flex items-center justify-center shrink-0 border border-[#F8CCD4]">
+                      <ShoppingBag className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-sm sm:text-base text-black font-mono">
+                        {totalItemsSold.toLocaleString('id-ID')}{' '}
+                        <span className="text-xs font-normal text-stone-700">pcs</span>
                       </div>
-
-                      {/* Tagihan & Tombol Aksi */}
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <span className="text-[10px] text-stone-500 uppercase font-bold block">
-                            Total Nota
-                          </span>
-                          <span className="text-sm sm:text-base font-black font-mono text-[#800020]">
-                            {formatRupiah(tx.total)}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedTx(tx)}
-                            className="p-2 rounded-xl bg-white border border-[#FCE4E8] hover:bg-[#FCE8EB] text-[#800020] transition-colors cursor-pointer"
-                            title="Lihat Rincian Lengkap / Cetak Struk"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleShareWhatsApp(tx)}
-                            className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer"
-                            title="Kirim Struk via WhatsApp"
-                          >
-                            <Share2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                      <div className="text-[10px] text-stone-700">
+                        Total {filteredTransactions.length} nota transaksi
                       </div>
                     </div>
+                  </div>
+                </td>
 
-                    {/* DETAIL INFORMASI PRODUK YANG DIBELI: DAFTAR BARANG & HARGA */}
-                    <div className="p-3.5 sm:p-4 space-y-2">
-                      <div className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">
-                        Barang yang Dibeli ({tx.items.length} jenis • {totalItemPcs} pcs):
+                {/* 2. Estimasi Laba Kotor */}
+                <td className="py-2.5 px-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200">
+                      <TrendingUp className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-sm sm:text-base text-emerald-800 font-mono">
+                        {formatRupiah(totalProfit)}
                       </div>
+                      <div className="text-[10px] text-emerald-800 font-medium">
+                        Margin keuntungan: {marginPercentage}% (Modal: {formatRupiah(totalCost)})
+                      </div>
+                    </div>
+                  </div>
+                </td>
 
-                      <div className="border border-[#FCE4E8] rounded-2xl overflow-hidden divide-y divide-[#FCE4E8] bg-[#FFFBFB]">
-                        {tx.items.map((item, idx) => {
-                          const itemTotal = item.product.sellPrice * item.qty;
+                {/* 3. Total Omset Penjualan */}
+                <td className="py-2.5 px-3 text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <div className="text-right">
+                      <div className="font-extrabold text-sm sm:text-base text-[#800020] font-mono">
+                        {formatRupiah(totalRevenue)}
+                      </div>
+                      <div className="text-[10px] text-stone-700">
+                        Tunai: {formatRupiah(dayCashSales)} | Digital:{' '}
+                        {formatRupiah(dayDigitalSales)}
+                      </div>
+                    </div>
+                    <div className="w-8 h-8 rounded-xl bg-[#FFF0F3] text-[#800020] flex items-center justify-center shrink-0 border border-[#F8CCD4]">
+                      <Coins className="w-4 h-4" />
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-                          return (
+      {/* =========================================================================
+          PART 3: KOLOM KHUSUS RINCIAN TRANSAKSI (FOKUS PEMBUKUAN)
+          Search bar no faktur DIHAPUS. Akses langsung ekspor ke Excel disediakan.
+          ========================================================================= */}
+      <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-[#FCE4E8] shadow-2xs overflow-hidden">
+        {/* Header Rincian Transaksi & Tombol Ekspor Excel */}
+        <div className="p-3.5 sm:p-4 border-b border-[#FCE4E8] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#FFF5F7]/40">
+          <div>
+            <h3 className="text-sm sm:text-base font-black text-black flex items-center gap-2">
+              <Receipt className="w-4 h-4 text-[#800020]" />
+              <span>Rincian Transaksi &amp; Pembukuan</span>
+            </h3>
+            <p className="text-xs text-stone-700 mt-0.5">
+              Jurnal pembukuan detail per transaksi untuk pencatatan keuangan toko.
+            </p>
+          </div>
+
+          {/* Tombol Ekspor Langsung ke Excel */}
+          <button
+            type="button"
+            onClick={handleExportBookkeepingExcel}
+            disabled={filteredTransactions.length === 0}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer shadow-2xs shrink-0 ${
+              filteredTransactions.length === 0
+                ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                : 'bg-emerald-700 hover:bg-emerald-800 text-white shadow-emerald-700/20'
+            }`}
+            title="Download jurnal rincian transaksi langsung ke file Excel (.csv)"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Ekspor Excel Pembukuan</span>
+          </button>
+        </div>
+
+        {/* Tabel Pembukuan Rincian Transaksi */}
+        {filteredTransactions.length === 0 ? (
+          <div className="p-10 text-center space-y-2">
+            <div className="w-12 h-12 rounded-2xl bg-[#FFF0F3] text-[#800020] flex items-center justify-center mx-auto border border-[#F8CCD4]">
+              <Receipt className="w-6 h-6" />
+            </div>
+            <h4 className="font-extrabold text-sm text-black">
+              Belum ada transaksi pada {dateMode === 'harian' ? 'hari ini' : 'periode ini'}
+            </h4>
+            <p className="text-xs text-stone-700 max-w-sm mx-auto">
+              Setiap transaksi yang berhasil dicatat di kasir POS akan otomatis tercatat di jurnal pembukuan ini.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-stone-50/90 text-stone-700 text-[11px] font-bold border-b border-[#FCE4E8]">
+                  <th className="py-2.5 px-3 text-left">Waktu</th>
+                  <th className="py-2.5 px-3 text-left">No. Faktur</th>
+                  <th className="py-2.5 px-3 text-left">Rincian Produk &amp; Qty</th>
+                  <th className="py-2.5 px-3 text-right">Total Omset</th>
+                  <th className="py-2.5 px-3 text-right">HPP Modal</th>
+                  <th className="py-2.5 px-3 text-right">Laba Kotor</th>
+                  <th className="py-2.5 px-3 text-center">Metode</th>
+                  <th className="py-2.5 px-3 text-left">Kasir</th>
+                  <th className="py-2.5 px-3 text-center">Struk</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100">
+                {filteredTransactions.map((tx) => {
+                  const txProfit = tx.profit || 0;
+                  const totalQty = tx.items.reduce((s, i) => s + i.qty, 0);
+
+                  return (
+                    <tr
+                      key={tx.id}
+                      className="hover:bg-[#FFF5F7]/50 transition-colors group"
+                    >
+                      {/* Waktu */}
+                      <td className="py-2.5 px-3 font-mono text-[11px] text-stone-700 whitespace-nowrap">
+                        {dateMode === 'periode'
+                          ? formatDateTime(tx.date)
+                          : formatTimeOnly(tx.date)}
+                      </td>
+
+                      {/* No Faktur */}
+                      <td className="py-2.5 px-3 font-mono font-bold text-black whitespace-nowrap">
+                        {tx.invoiceNo}
+                      </td>
+
+                      {/* Rincian Produk & Qty */}
+                      <td className="py-2.5 px-3 max-w-xs">
+                        <div className="space-y-0.5">
+                          {tx.items.slice(0, 3).map((item, idx) => (
                             <div
                               key={idx}
-                              className="p-2.5 sm:p-3 flex items-center justify-between gap-3 text-xs hover:bg-[#FFF5F7] transition-colors"
+                              className="text-[11px] text-stone-800 flex items-center justify-between gap-2"
                             >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="w-8 h-8 rounded-lg bg-white border border-[#FCE4E8] overflow-hidden flex items-center justify-center shrink-0">
-                                  {item.product.imageUrl ? (
-                                    <img
-                                      src={item.product.imageUrl}
-                                      alt={item.product.name}
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => {
-                                        (e.target as HTMLElement).style.display = 'none';
-                                      }}
-                                    />
-                                  ) : (
-                                    <Package className="w-4 h-4 text-[#F8CCD4]" />
-                                  )}
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="font-extrabold text-black truncate text-xs sm:text-sm">
-                                    {item.product.name}
-                                  </div>
-                                  <div className="text-[10px] text-stone-500 font-medium">
-                                    Kategori: {item.product.category} • SKU: {item.product.sku}
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="text-right shrink-0">
-                                <div className="font-mono text-xs text-stone-700">
-                                  <span className="font-bold text-black">{item.qty} {item.product.unit || 'pcs'}</span>
-                                  <span className="text-stone-400 mx-1">×</span>
-                                  <span>{formatRupiah(item.product.sellPrice)}</span>
-                                </div>
-                                <div className="font-mono font-black text-xs text-[#800020] mt-0.5">
-                                  {formatRupiah(itemTotal)}
-                                </div>
-                              </div>
+                              <span className="truncate">{item.product.name}</span>
+                              <span className="font-mono font-bold text-black shrink-0">
+                                x{item.qty}
+                              </span>
                             </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Footer Kalkulasi Transaksi */}
-                      <div className="pt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-600">
-                        <div className="flex items-center gap-2">
-                          {tx.pointsUsedDiscount && tx.pointsUsedDiscount > 0 && (
-                            <span className="text-[11px] px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
-                              Diskon Poin: -{formatRupiah(tx.pointsUsedDiscount)}
-                            </span>
-                          )}
-                          {tx.tax > 0 && (
-                            <span className="text-[11px] px-2 py-0.5 rounded-lg bg-stone-100 text-stone-700 font-medium">
-                              PPN: {formatRupiah(tx.tax)}
-                            </span>
-                          )}
-                          {tx.notes && (
-                            <span className="text-[11px] text-stone-500 italic">
-                              Catatan: &ldquo;{tx.notes}&rdquo;
-                            </span>
+                          ))}
+                          {tx.items.length > 3 && (
+                            <div className="text-[10px] text-stone-700 italic">
+                              +{tx.items.length - 3} produk lainnya ({totalQty} pcs)
+                            </div>
                           )}
                         </div>
+                      </td>
 
-                        <div className="text-right font-mono text-[11px]">
-                          <span>Bayar: <strong>{formatRupiah(tx.amountPaid)}</strong></span>
-                          {tx.change > 0 && (
-                            <span className="ml-2 text-stone-500">Kembalian: {formatRupiah(tx.change)}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                      {/* Total Omset */}
+                      <td className="py-2.5 px-3 text-right font-mono font-bold text-[#800020] whitespace-nowrap">
+                        {formatRupiah(tx.total)}
+                      </td>
 
-          {/* =========================================================
-              BAGIAN RINCIAN PENGELUARAN KAS & BELI STOK PADA HARI INI
-              ========================================================= */}
-          <div className="bg-white rounded-3xl border border-[#FCE4E8] shadow-sm overflow-hidden p-4 sm:p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#FCE4E8]">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-rose-50 text-[#800020] border border-rose-200 flex items-center justify-center font-bold">
-                  <ArrowDownCircle className="w-5 h-5 text-[#800020]" />
+                      {/* HPP Modal */}
+                      <td className="py-2.5 px-3 text-right font-mono text-stone-700 whitespace-nowrap">
+                        {formatRupiah(tx.costTotal || 0)}
+                      </td>
+
+                      {/* Laba Kotor */}
+                      <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-800 whitespace-nowrap">
+                        {formatRupiah(txProfit)}
+                      </td>
+
+                      {/* Metode Bayar */}
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                            tx.paymentMethod === 'tunai'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : tx.paymentMethod === 'qris'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-purple-100 text-purple-800'
+                          }`}
+                        >
+                          {tx.paymentMethod}
+                        </span>
+                      </td>
+
+                      {/* Kasir */}
+                      <td className="py-2.5 px-3 text-stone-700 whitespace-nowrap">
+                        {tx.cashierName}
+                      </td>
+
+                      {/* Tombol Lihat Struk */}
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedReceiptTx(tx)}
+                          className="p-1 rounded-lg text-stone-700 hover:text-[#800020] hover:bg-[#FFF0F3] transition-colors cursor-pointer"
+                          title="Lihat Detail Struk"
+                        >
+                          <Receipt className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* =========================================================================
+          MODAL 1: INPUT / EDIT SALDO KAS AWAL
+          ========================================================================= */}
+      {isInitialCashModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-5 border border-[#F8CCD4] shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#FCE4E8]">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-[#FFF0F3] text-[#800020] flex items-center justify-center">
+                  <Wallet className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-black text-black">
-                      Pengeluaran Kas &amp; Pembelian Stok Hari Ini
-                    </h3>
-                    <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-rose-100 text-[#800020]">
-                      {dailyExpenses.length} Pengeluaran
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-stone-600">
-                    Catatan uang keluar pada {formatDateOnly(selectedDay + 'T00:00:00')} untuk beli stok, operasional, dll.
-                  </p>
+                  <h3 className="font-black text-sm text-black">Input Saldo Kas Awal</h3>
+                  <p className="text-[11px] text-stone-700">{formatIndonesianDate(selectedDate)}</p>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className="text-left sm:text-right">
-                  <div className="text-[10px] font-bold text-stone-500 uppercase">
-                    Total Kas Keluar
-                  </div>
-                  <div className="text-sm sm:text-base font-black font-mono text-[#800020]">
-                    -{formatRupiah(dailyMetrics.dayExpenses)}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsExpenseModalOpen(true)}
-                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer shrink-0"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>+ Catat Pengeluaran</span>
-                </button>
-              </div>
-            </div>
-
-            {/* List / Table Pengeluaran Hari Ini */}
-            {dailyExpenses.length === 0 ? (
-              <div className="py-6 text-center text-xs text-stone-500 bg-[#FFF8F8] rounded-2xl border border-dashed border-[#FCE4E8] flex flex-col items-center justify-center gap-2">
-                <span>Belum ada pengeluaran kas atau pembelian stok yang dicatat pada hari ini.</span>
-                <button
-                  type="button"
-                  onClick={() => setIsExpenseModalOpen(true)}
-                  className="px-3 py-1.5 rounded-xl bg-white border border-[#F8CCD4] text-[#800020] text-xs font-bold hover:bg-[#FCE8EB] cursor-pointer"
-                >
-                  + Catat Pengeluaran Hari Ini
-                </button>
-              </div>
-            ) : (
-              <div className="divide-y divide-[#FCE4E8] border border-[#FCE4E8] rounded-2xl overflow-hidden">
-                {dailyExpenses.map((exp) => (
-                  <div
-                    key={exp.id}
-                    className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 hover:bg-[#FFF5F7] transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4] shrink-0 mt-0.5">
-                        {exp.categoryLabel || exp.category}
-                      </span>
-                      <div>
-                        <div className="text-xs font-bold text-black flex items-center gap-2">
-                          <span>{exp.notes || 'Pengeluaran Kas Toko'}</span>
-                        </div>
-                        <div className="text-[10px] text-stone-500 font-mono mt-0.5 flex items-center gap-2">
-                          <span>{formatTimeOnly(exp.date)} WIB</span>
-                          <span>•</span>
-                          <span>Dicatat oleh: <strong>{exp.cashierName}</strong></span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between sm:justify-end gap-3 self-end sm:self-auto w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-[#FCE4E8]">
-                      <span className="font-mono font-black text-sm text-[#800020]">
-                        -{formatRupiah(exp.amount)}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteExpenseConfirmId(exp.id)}
-                        className="p-1.5 rounded-lg text-stone-400 hover:text-[#800020] hover:bg-rose-100 transition-colors cursor-pointer"
-                        title="Hapus Pengeluaran Ini"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Rekap Saldo Kas Bersih Hari Ini (Penjualan Tunai - Pengeluaran) */}
-            <div className="p-3 bg-[#FFF5F7] rounded-2xl border border-[#FCE4E8] flex flex-wrap items-center justify-between gap-2 text-xs">
-              <span className="text-stone-700 font-medium">
-                Kalkulasi Kas Hari Ini: Penjualan Tunai ({formatRupiah(dailyMetrics.cashRevenue)}) &minus; Pengeluaran Kas ({formatRupiah(dailyMetrics.dayExpenses)})
-              </span>
-              <div className="font-mono text-xs font-bold text-black">
-                Sisa Kas Bersih Hari Ini:{' '}
-                <span className={`font-black ${dailyMetrics.netCash >= 0 ? 'text-emerald-800' : 'text-[#800020]'}`}>
-                  {formatRupiah(dailyMetrics.netCash)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===================================================================
-          TAB 2: REKAP PENJUALAN PERIODE TERTENTU (ANALISIS & AGREGASI)
-          =================================================================== */}
-      {activeTab === 'period-recap' && (
-        <div className="space-y-4">
-          {/* Bar Filter Rentang Periode */}
-          <div className="bg-white rounded-3xl border border-[#FCE4E8] p-4 sm:p-5 shadow-sm space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-xs sm:text-sm font-black text-black">
-                  Pilih Rentang Periode Penjualan:
-                </h3>
-                <p className="text-[11px] text-stone-600">
-                  Lihat performa penjualan dalam kurun waktu tertentu.
-                </p>
-              </div>
-
-              {/* Tombol Ekspor Periode */}
-              <button
-                type="button"
-                onClick={() => exportTransactionsToExcel(periodTransactions, storeProfile.name)}
-                disabled={periodTransactions.length === 0}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs self-start sm:self-auto ${
-                  periodTransactions.length > 0
-                    ? 'bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer'
-                    : 'bg-stone-200 text-stone-400 cursor-not-allowed'
-                }`}
-                title="Ekspor seluruh transaksi dalam periode ini ke file Excel (.csv)"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Unduh Laporan Periode (Excel)</span>
-              </button>
-            </div>
-
-            {/* Tombol Presets Periode */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              {[
-                { id: 'today', label: 'Hari Ini' },
-                { id: '7days', label: '7 Hari Terakhir' },
-                { id: '30days', label: '30 Hari Terakhir' },
-                { id: 'this_month', label: 'Bulan Ini' },
-                { id: 'last_month', label: 'Bulan Lalu' },
-                { id: 'custom', label: 'Rentang Kustom' },
-              ].map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setPeriodPreset(p.id as any)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                    periodPreset === p.id
-                      ? 'bg-[#800020] text-white border-[#800020] shadow-xs'
-                      : 'bg-[#FFF5F7] text-black border-[#FCE4E8] hover:bg-[#FCE8EB]'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Input Rentang Tanggal Kustom (Jika dipilih) */}
-            {periodPreset === 'custom' && (
-              <div className="pt-2 border-t border-[#FCE4E8] flex flex-wrap items-center gap-3 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-stone-700">Dari:</span>
-                  <input
-                    type="date"
-                    value={customStartDate}
-                    onChange={(e) => setCustomStartDate(e.target.value)}
-                    className="px-3 py-1.5 rounded-xl border border-[#FCE4E8] bg-white font-bold text-black"
-                  />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-stone-700">Sampai:</span>
-                  <input
-                    type="date"
-                    value={customEndDate}
-                    onChange={(e) => setCustomEndDate(e.target.value)}
-                    className="px-3 py-1.5 rounded-xl border border-[#FCE4E8] bg-white font-bold text-black"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Kartu Metrik Periode */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-            {/* Total Omzet Periode */}
-            <div className="bg-white p-3.5 sm:p-4 rounded-3xl border border-[#FCE4E8] shadow-xs">
-              <span className="text-[11px] font-bold text-stone-600 block">
-                Total Omzet Periode
-              </span>
-              <div className="text-base sm:text-xl font-black font-mono text-[#800020] mt-1">
-                {formatRupiah(periodMetrics.totalRevenue)}
-              </div>
-              <div className="text-[10px] text-stone-500 mt-0.5">
-                Rata-rata/nota: {formatRupiah(periodMetrics.avgOrderValue)}
-              </div>
-            </div>
-
-            {/* Estimasi Laba Kotor */}
-            <div className="bg-white p-3.5 sm:p-4 rounded-3xl border border-[#FCE4E8] shadow-xs">
-              <span className="text-[11px] font-bold text-stone-600 block">
-                Estimasi Laba Kotor
-              </span>
-              <div className="text-base sm:text-xl font-black font-mono text-emerald-800 mt-1">
-                {formatRupiah(periodMetrics.totalProfit)}
-              </div>
-              <div className="text-[10px] text-emerald-700 font-bold mt-0.5">
-                Margin profit {periodMetrics.marginPercent}%
-              </div>
-            </div>
-
-            {/* Transaksi Selesai */}
-            <div className="bg-white p-3.5 sm:p-4 rounded-3xl border border-[#FCE4E8] shadow-xs">
-              <span className="text-[11px] font-bold text-stone-600 block">
-                Total Transaksi
-              </span>
-              <div className="text-base sm:text-xl font-black font-mono text-black mt-1">
-                {periodMetrics.txCount} <span className="text-xs font-normal">nota</span>
-              </div>
-              <div className="text-[10px] text-stone-500 mt-0.5">
-                {periodMetrics.cashCount} Tunai • {periodMetrics.digitalCount} Non-Tunai
-              </div>
-            </div>
-
-            {/* Total Produk Terjual */}
-            <div className="bg-white p-3.5 sm:p-4 rounded-3xl border border-[#FCE4E8] shadow-xs">
-              <span className="text-[11px] font-bold text-stone-600 block">
-                Total Produk Terjual
-              </span>
-              <div className="text-base sm:text-xl font-black font-mono text-black mt-1">
-                {periodMetrics.totalItemsCount} <span className="text-xs font-normal">pcs barang</span>
-              </div>
-              <div className="text-[10px] text-stone-500 mt-0.5">
-                Seluruh varian cetakan &amp; perabot
-              </div>
-            </div>
-          </div>
-
-          {/* TABEL AGREGASI: RANGKUMAN PENJUALAN PER HARI DALAM PERIODE */}
-          <div className="bg-white rounded-3xl border border-[#FCE4E8] shadow-xs overflow-hidden">
-            <div className="p-4 bg-[#FFF8F8] border-b border-[#FCE4E8] flex items-center justify-between">
-              <div>
-                <h4 className="text-xs sm:text-sm font-black text-black">
-                  Rangkuman Penjualan Per Hari dalam Periode Ini
-                </h4>
-                <p className="text-[11px] text-stone-500 mt-0.5">
-                  Klik tombol &quot;Buka Detail Hari Ini&quot; untuk melihat transaksi per transaksi dan barang yang dibeli.
-                </p>
-              </div>
-              <span className="text-xs font-bold text-stone-500 font-mono">
-                {periodDailySummary.length} Hari Aktif
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-[#FFF0F3] border-b border-[#FCE4E8] text-[11px] font-bold text-stone-700 uppercase">
-                    <th className="py-3 px-4">Tanggal</th>
-                    <th className="py-3 px-3 text-center">Transaksi</th>
-                    <th className="py-3 px-3 text-center">Item Terjual</th>
-                    <th className="py-3 px-3 text-right">Omzet Penjualan</th>
-                    <th className="py-3 px-3 text-right">Estimasi Laba</th>
-                    <th className="py-3 px-3">Metode Bayar</th>
-                    <th className="py-3 px-4 text-center">Aksi Detail</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#FCE4E8]">
-                  {periodDailySummary.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="py-8 text-center text-stone-500 text-xs">
-                        Tidak ada catatan penjualan pada periode ini.
-                      </td>
-                    </tr>
-                  ) : (
-                    periodDailySummary.map((day) => (
-                      <tr key={day.dateStr} className="hover:bg-[#FFF5F7] transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="font-bold text-black">
-                            {formatDateOnly(day.dateStr + 'T00:00:00')}
-                          </div>
-                          <div className="text-[10px] text-stone-500 font-mono">
-                            {day.dateStr}
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 text-center font-bold text-black font-mono">
-                          {day.txCount} nota
-                        </td>
-                        <td className="py-3 px-3 text-center font-mono text-stone-700">
-                          {day.itemsCount} pcs
-                        </td>
-                        <td className="py-3 px-3 text-right font-black font-mono text-[#800020]">
-                          {formatRupiah(day.revenue)}
-                        </td>
-                        <td className="py-3 px-3 text-right font-black font-mono text-emerald-800">
-                          {formatRupiah(day.profit)}
-                        </td>
-                        <td className="py-3 px-3 text-[11px] text-stone-600">
-                          <div>Tunai: {formatRupiah(day.cashRevenue)}</div>
-                          <div className="text-[10px] text-stone-500">Non-Tunai: {formatRupiah(day.digitalRevenue)}</div>
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedDay(day.dateStr);
-                              setActiveTab('daily-recap');
-                            }}
-                            className="px-2.5 py-1 text-xs font-bold bg-[#FCE8EB] hover:bg-[#800020] text-[#800020] hover:text-white rounded-xl transition-all cursor-pointer shadow-2xs whitespace-nowrap"
-                            title="Buka rincian transaksi per barang untuk hari ini"
-                          >
-                            Buka Detail Hari Ini &rarr;
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* PERINGKAT PRODUK TERLARIS DALAM PERIODE INI */}
-          {topProductsInPeriod.length > 0 && (
-            <div className="bg-white rounded-3xl border border-[#FCE4E8] p-4 sm:p-5 shadow-xs space-y-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-600" />
-                <h4 className="text-xs sm:text-sm font-black text-black">
-                  5 Produk Terlaris Dalam Periode Ini:
-                </h4>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
-                {topProductsInPeriod.map((prod, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 rounded-2xl bg-[#FFF8F8] border border-[#FCE4E8] flex flex-col justify-between"
-                  >
-                    <div>
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
-                        Top #{idx + 1}
-                      </span>
-                      <div className="font-extrabold text-black text-xs mt-1 truncate">
-                        {prod.name}
-                      </div>
-                      <div className="text-[10px] text-stone-500 font-medium">
-                        {prod.category}
-                      </div>
-                    </div>
-                    <div className="mt-2 pt-2 border-t border-[#FCE4E8] flex items-center justify-between text-xs font-mono">
-                      <span className="font-bold text-black">{prod.qty} pcs</span>
-                      <span className="font-bold text-[#800020]">{formatRupiah(prod.revenue)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ===================================================================
-          TAB 3: SALDO KAS LACI HARIAN (KAS AWAL & KAS AKHIR)
-          =================================================================== */}
-      {activeTab === 'cash-history' && (
-        <div className="space-y-4">
-          {/* Card Saldo Hari Ini */}
-          <div className="bg-white rounded-3xl border border-[#FCE4E8] p-4 sm:p-5 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <span className="text-[10px] font-black uppercase text-[#800020] bg-[#FCE8EB] px-2.5 py-0.5 rounded-full border border-[#F8CCD4]">
-                  STATUS LACI HARI INI
-                </span>
-                <h3 className="text-base font-black text-black mt-1">
-                  Saldo Laci Kasir Hari Ini
-                </h3>
-                <p className="text-xs text-stone-600">
-                  Penjaga Kasir: <strong className="text-black">{todayCashSummary.cashierName}</strong> • {formatDateOnly(getTodayISO() + 'T00:00:00')}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleOpenEditToday}
-                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] transition-colors shadow-2xs cursor-pointer"
-                >
-                  Sesuaikan Saldo Kas Hari Ini
-                </button>
-                <button
-                  type="button"
-                  onClick={handleOpenAddRecord}
-                  className="px-3 py-2 rounded-xl text-xs font-bold text-black bg-[#FFF5F7] hover:bg-[#FCE8EB] border border-[#FCE4E8] transition-colors cursor-pointer"
-                >
-                  + Catatan Tanggal Lain
-                </button>
-              </div>
-            </div>
-
-            {/* Grid 4 Nilai Kas Hari Ini */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-[#FCE4E8]">
-              <div className="p-3 rounded-2xl bg-[#FFF8F8] border border-[#FCE4E8]">
-                <span className="text-[11px] font-bold text-stone-600">Kas Awal (Modal)</span>
-                <div className="text-sm sm:text-base font-black font-mono text-black mt-0.5">
-                  {formatRupiah(todayCashSummary.initial)}
-                </div>
-              </div>
-              <div className="p-3 rounded-2xl bg-[#FFF8F8] border border-[#FCE4E8]">
-                <span className="text-[11px] font-bold text-stone-600">Penjualan Tunai (+)</span>
-                <div className="text-sm sm:text-base font-black font-mono text-emerald-800 mt-0.5">
-                  +{formatRupiah(todayCashSummary.cashSales)}
-                </div>
-              </div>
-              <div className="p-3 rounded-2xl bg-[#FFF8F8] border border-[#FCE4E8]">
-                <span className="text-[11px] font-bold text-stone-600">Pengeluaran Kas (-)</span>
-                <div className="text-sm sm:text-base font-black font-mono text-[#800020] mt-0.5">
-                  -{formatRupiah(todayCashSummary.todayExpenses)}
-                </div>
-              </div>
-              <div className="p-3 rounded-2xl bg-[#FFF8F8] border border-[#FCE4E8]">
-                <span className="text-[11px] font-bold text-stone-600">Kas Akhir Riil</span>
-                <div className="text-sm sm:text-base font-black font-mono text-black mt-0.5">
-                  {formatRupiah(todayCashSummary.actual)}
-                </div>
-                <div className="text-[10px] text-stone-500 mt-0.5">
-                  Selisih: {formatRupiah(todayCashSummary.difference)}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tabel Riwayat Saldo Kas Harian */}
-          <div className="bg-white rounded-3xl border border-[#FCE4E8] shadow-xs overflow-hidden">
-            <div className="p-4 bg-[#FFF8F8] border-b border-[#FCE4E8] flex items-center justify-between">
-              <div>
-                <h4 className="text-xs sm:text-sm font-black text-black">
-                  Tabel Riwayat Kas Harian (Semua Tanggal)
-                </h4>
-                <p className="text-[11px] text-stone-500">
-                  Pencatatan pembukuan laci kasir setiap pergantian hari atau shift.
-                </p>
               </div>
               <button
                 type="button"
-                onClick={() => exportDailyCashToExcel(dailyCashHistory, storeProfile.name)}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Unduh Excel Kas</span>
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-[#FFF0F3] border-b border-[#FCE4E8] text-[11px] font-bold text-stone-700 uppercase">
-                    <th className="py-3 px-4">Tanggal &amp; Kasir</th>
-                    <th className="py-3 px-3 text-right">Kas Awal</th>
-                    <th className="py-3 px-3 text-right">Penjualan Tunai</th>
-                    <th className="py-3 px-3 text-right">Pengeluaran Kas</th>
-                    <th className="py-3 px-3 text-right">Kas Akhir Fisik</th>
-                    <th className="py-3 px-3 text-right">Selisih</th>
-                    <th className="py-3 px-4 text-center">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#FCE4E8]">
-                  {dailyCashHistory.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="py-8 text-center text-stone-500 text-xs">
-                        Belum ada riwayat saldo kas harian.
-                      </td>
-                    </tr>
-                  ) : (
-                    dailyCashHistory.map((rec) => (
-                      <tr key={rec.id} className="hover:bg-[#FFF5F7] transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="font-bold text-black">{formatDateOnly(rec.date)}</div>
-                          <div className="text-[10px] text-stone-500">Kasir: {rec.cashierName}</div>
-                        </td>
-                        <td className="py-3 px-3 text-right font-mono font-bold text-black">
-                          {formatRupiah(rec.initialCash)}
-                        </td>
-                        <td className="py-3 px-3 text-right font-mono font-bold text-emerald-800">
-                          +{formatRupiah(rec.cashSales)}
-                        </td>
-                        <td className="py-3 px-3 text-right font-mono font-bold text-[#800020]">
-                          -{formatRupiah(rec.cashExpenses || 0)}
-                        </td>
-                        <td className="py-3 px-3 text-right font-mono font-black text-black">
-                          {formatRupiah(rec.actualCash)}
-                        </td>
-                        <td className="py-3 px-3 text-right font-mono font-bold">
-                          <span
-                            className={
-                              rec.difference === 0
-                                ? 'text-stone-700'
-                                : rec.difference > 0
-                                ? 'text-emerald-700'
-                                : 'text-[#800020]'
-                            }
-                          >
-                            {formatRupiah(rec.difference)}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenEditRecord(rec)}
-                              className="p-1.5 rounded-lg text-stone-600 hover:text-black hover:bg-[#FCE8EB] cursor-pointer"
-                              title="Edit Catatan Kas"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setDeleteConfirmId(rec.id)}
-                              className="p-1.5 rounded-lg text-stone-400 hover:text-[#800020] hover:bg-[#FCE8EB] cursor-pointer"
-                              title="Hapus Catatan Kas"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===================================================================
-          TAB 4: PENGELUARAN KAS & PEMBELIAN STOK TOKO
-          =================================================================== */}
-      {activeTab === 'expenses' && (
-        <div className="space-y-4">
-          {/* Header Pengeluaran */}
-          <div className="bg-white rounded-3xl border border-[#FCE4E8] p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h3 className="text-base font-black text-black">
-                Rekap Pengeluaran Kas Toko
-              </h3>
-              <p className="text-xs text-stone-600">
-                Catatan pembelian stok dari distributor, kemasan packing, dan operasional toko.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsExpenseModalOpen(true)}
-                className="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>+ Catat Pengeluaran Baru</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => exportExpensesToExcel(filteredExpenses, storeProfile.name)}
-                className="px-3 py-2 rounded-xl text-xs font-bold text-black bg-[#FFF5F7] hover:bg-[#FCE8EB] border border-[#FCE4E8] transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Unduh Excel</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Filter Kategori Pengeluaran */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {[
-              { id: 'all', label: 'Semua Kategori' },
-              { id: 'pembelian_stok', label: 'Beli Stok Cetakan / Perabot' },
-              { id: 'kemasan_packaging', label: 'Kemasan & Plastik' },
-              { id: 'operasional', label: 'Operasional Toko' },
-              { id: 'konsumsi_transport', label: 'Transportasi & Konsumsi' },
-            ].map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setExpenseCategoryFilter(cat.id as any)}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                  expenseCategoryFilter === cat.id
-                    ? 'bg-[#800020] text-white border-[#800020] shadow-xs'
-                    : 'bg-white text-black border-[#FCE4E8] hover:bg-[#FFF5F7]'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Tabel Pengeluaran Kas */}
-          <div className="bg-white rounded-3xl border border-[#FCE4E8] shadow-xs overflow-hidden">
-            <div className="p-3.5 sm:p-4 bg-[#FFF8F8] border-b border-[#FCE4E8] flex items-center justify-between">
-              <span className="text-xs font-bold text-black">
-                Total Tercatat: <strong className="text-[#800020] font-mono">{formatRupiah(expenseTotalAmount)}</strong> ({filteredExpenses.length} catatan)
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-[#FFF0F3] border-b border-[#FCE4E8] text-[11px] font-bold text-stone-700 uppercase">
-                    <th className="py-3 px-4">Waktu &amp; Tanggal</th>
-                    <th className="py-3 px-3">Kategori</th>
-                    <th className="py-3 px-3">Kasir</th>
-                    <th className="py-3 px-4">Keterangan / Alasan</th>
-                    <th className="py-3 px-3 text-right">Nominal</th>
-                    <th className="py-3 px-4 text-center">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#FCE4E8]">
-                  {filteredExpenses.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-8 text-center text-stone-500 text-xs">
-                        Belum ada catatan pengeluaran kas.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredExpenses.map((exp) => (
-                      <tr key={exp.id} className="hover:bg-[#FFF5F7] transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="font-bold text-black">{formatDateOnly(exp.date)}</div>
-                          <div className="text-[10px] text-stone-500 font-mono">{formatTimeOnly(exp.date)} WIB</div>
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-[#FCE8EB] text-[#800020] border border-[#F8CCD4]">
-                            {exp.categoryLabel}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 font-medium text-black">
-                          {exp.cashierName}
-                        </td>
-                        <td className="py-3 px-4 text-stone-700">
-                          {exp.notes || '-'}
-                        </td>
-                        <td className="py-3 px-3 text-right font-black font-mono text-[#800020]">
-                          -{formatRupiah(exp.amount)}
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <button
-                            type="button"
-                            onClick={() => setDeleteExpenseConfirmId(exp.id)}
-                            className="p-1.5 rounded-lg text-stone-400 hover:text-[#800020] hover:bg-[#FCE8EB] cursor-pointer"
-                            title="Hapus Catatan Pengeluaran"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===================================================================
-          MODAL DETAIL NOTA STRUK
-          =================================================================== */}
-      {selectedTx && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl shadow-2xl border border-[#FCE4E8] max-w-md w-full p-5 animate-in zoom-in-95 duration-150 text-black max-h-[92vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-[#FCE4E8]">
-              <div>
-                <span className="text-[10px] font-mono text-stone-500 font-bold block">
-                  {selectedTx.invoiceNo}
-                </span>
-                <h3 className="text-sm font-black text-black">
-                  Rincian Transaksi
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedTx(null)}
-                className="p-1 text-stone-400 hover:text-black cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="mt-3 space-y-3">
-              <div className="p-2.5 bg-[#FFF8F8] rounded-2xl border border-[#FCE4E8] text-xs space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-stone-500">Waktu Transaksi:</span>
-                  <span className="font-bold text-black">{formatDateTime(selectedTx.date)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-stone-500">Kasir:</span>
-                  <span className="font-bold text-black">{selectedTx.cashierName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-stone-500">Pelanggan:</span>
-                  <span className="font-bold text-black">{selectedTx.customerName || 'Umum'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-stone-500">Metode Bayar:</span>
-                  <span className="font-bold text-[#800020] uppercase">{selectedTx.paymentMethod}</span>
-                </div>
-              </div>
-
-              {/* Rincian Produk */}
-              <div className="space-y-1.5 max-h-56 overflow-y-auto divide-y divide-[#FCE4E8]">
-                {selectedTx.items.map((i, idx) => (
-                  <div key={idx} className="pt-1.5 first:pt-0 flex justify-between items-center text-xs">
-                    <div>
-                      <div className="font-bold text-black">{i.product.name}</div>
-                      <div className="text-[10px] text-stone-500">
-                        {i.qty} {i.product.unit || 'pcs'} × {formatRupiah(i.product.sellPrice)}
-                      </div>
-                    </div>
-                    <div className="font-mono font-bold text-black">
-                      {formatRupiah(i.product.sellPrice * i.qty)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Total & Kalkulasi */}
-              <div className="pt-3 border-t border-[#FCE4E8] space-y-1 text-xs">
-                <div className="flex justify-between font-bold text-black text-sm">
-                  <span>Total Tagihan:</span>
-                  <span className="text-[#800020] font-mono">{formatRupiah(selectedTx.total)}</span>
-                </div>
-                <div className="flex justify-between text-stone-600">
-                  <span>Jumlah Dibayar:</span>
-                  <span className="font-mono">{formatRupiah(selectedTx.amountPaid)}</span>
-                </div>
-                {selectedTx.change > 0 && (
-                  <div className="flex justify-between text-stone-600">
-                    <span>Kembalian:</span>
-                    <span className="font-mono font-bold">{formatRupiah(selectedTx.change)}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="pt-2 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleShareWhatsApp(selectedTx)}
-                  className="flex-1 py-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-emerald-100 cursor-pointer"
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                  <span>Kirim WA</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedTx(null)}
-                  className="flex-1 py-2 rounded-xl bg-[#800020] text-white font-bold text-xs hover:bg-[#660019] cursor-pointer"
-                >
-                  Tutup
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL SESUAIKAN SALDO KAS */}
-      {isCashModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl shadow-2xl border border-[#FCE4E8] max-w-md w-full p-5 sm:p-6 animate-in zoom-in-95 duration-150 text-black">
-            <div className="flex items-center justify-between pb-3 border-b border-[#FCE4E8]">
-              <div>
-                <h3 className="text-sm font-black text-black">
-                  {cashModalMode === 'edit-today'
-                    ? 'Sesuaikan Saldo Kas Laci Hari Ini'
-                    : cashModalMode === 'edit-record'
-                    ? 'Edit Catatan Kas Tanggal'
-                    : 'Tambah Catatan Kas Baru'}
-                </h3>
-                <p className="text-[11px] text-stone-600">
-                  Pastikan uang fisik di laci kasir sesuai dengan pembukuan.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsCashModalOpen(false)}
-                className="p-1 text-stone-400 hover:text-black cursor-pointer"
+                onClick={() => setIsInitialCashModalOpen(false)}
+                className="p-1 rounded-lg text-stone-400 hover:text-black cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveCashModal} className="mt-4 space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[11px] font-bold text-black mb-1">
-                    Tanggal
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formDate}
-                    onChange={(e) => setFormDate(e.target.value)}
-                    className="w-full px-3 py-1.5 border border-[#FCE4E8] rounded-xl font-bold text-black"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-black mb-1">
-                    Penjaga Kasir
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formCashierName}
-                    onChange={(e) => setFormCashierName(e.target.value)}
-                    className="w-full px-3 py-1.5 border border-[#FCE4E8] rounded-xl font-bold text-black"
-                  />
-                </div>
-              </div>
-
+            <form onSubmit={handleSaveInitialCash} className="space-y-3.5">
               <div>
-                <label className="block text-[11px] font-bold text-black mb-1">
-                  Modal Kas Awal (Uang Kembalian di Laci)
+                <label className="block text-xs font-bold text-black mb-1">
+                  Nominal Modal Kas Awal (Rp):
                 </label>
                 <input
                   type="number"
-                  min="0"
-                  step="1000"
-                  value={formInitialCash || ''}
-                  onChange={(e) => setFormInitialCash(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-1.5 border border-[#FCE4E8] rounded-xl font-mono font-bold text-black"
+                  value={initialCashInput}
+                  onChange={(e) => setInitialCashInput(e.target.value)}
+                  placeholder="Contoh: 200000"
+                  className="w-full px-3 py-2 text-base font-mono font-bold text-black border border-[#F8CCD4] rounded-xl focus:ring-2 focus:ring-[#800020] focus:outline-none"
+                  autoFocus
                 />
               </div>
 
+              {/* Quick Preset Buttons */}
+              <div className="grid grid-cols-4 gap-1.5">
+                {[50000, 100000, 200000, 500000].map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setInitialCashInput(String(amt))}
+                    className="px-1.5 py-1 text-[10px] font-bold rounded-lg border border-[#F8CCD4] bg-[#FFF5F7] text-[#800020] hover:bg-[#800020] hover:text-white transition-colors cursor-pointer text-center"
+                  >
+                    {amt / 1000}rb
+                  </button>
+                ))}
+              </div>
+
               <div>
-                <label className="block text-[11px] font-bold text-black mb-1">
-                  Kas Akhir Fisik (Uang Tunai Riil di Laci Saat Tutup)
+                <label className="block text-xs font-bold text-black mb-1">
+                  Catatan (Opsional):
                 </label>
                 <input
-                  type="number"
-                  min="0"
-                  step="1000"
-                  required
-                  value={formActualCash || ''}
-                  onChange={(e) => setFormActualCash(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-1.5 border border-[#FCE4E8] rounded-xl font-mono font-black text-black"
+                  type="text"
+                  value={initialCashNotes}
+                  onChange={(e) => setInitialCashNotes(e.target.value)}
+                  placeholder="Contoh: Modal kembalian pecahan 2rb-20rb"
+                  className="w-full px-3 py-1.5 text-xs border border-[#FCE4E8] rounded-xl focus:ring-2 focus:ring-[#800020] focus:outline-none"
                 />
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-black mb-1">
-                  Catatan Laci (Opsional)
-                </label>
-                <textarea
-                  rows={2}
-                  value={formNotes}
-                  onChange={(e) => setFormNotes(e.target.value)}
-                  placeholder="Misal: Uang pas, kas awal dari pemilik..."
-                  className="w-full px-3 py-1.5 border border-[#FCE4E8] rounded-xl text-black resize-none"
-                />
-              </div>
-
-              <div className="pt-2 flex gap-2">
+              <div className="flex gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsCashModalOpen(false)}
-                  className="flex-1 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold cursor-pointer"
+                  onClick={() => setIsInitialCashModalOpen(false)}
+                  className="w-1/2 py-2 rounded-xl text-xs font-bold bg-stone-100 hover:bg-stone-200 text-stone-700 cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 rounded-xl bg-[#800020] hover:bg-[#660019] text-white font-bold cursor-pointer"
+                  className="w-1/2 py-2 rounded-xl text-xs font-bold bg-[#800020] hover:bg-[#990026] text-white shadow-2xs cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  Simpan Catatan
+                  <Check className="w-3.5 h-3.5" />
+                  <span>Simpan</span>
                 </button>
               </div>
             </form>
@@ -1849,76 +1015,314 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = ({ onOpenShiftModal
         </div>
       )}
 
-      {/* MODAL KONFIRMASI HAPUS CATATAN KAS */}
-      {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl border border-rose-200 p-5 max-w-sm w-full space-y-3 text-center">
-            <h4 className="font-black text-sm text-black">Hapus Riwayat Kas Ini?</h4>
-            <p className="text-xs text-stone-600">
-              Catatan pembukuan kas pada tanggal tersebut akan dihapus.
-            </p>
-            <div className="flex gap-2 pt-2">
+      {/* =========================================================================
+          MODAL 2: INPUT / EDIT SALDO KAS AKHIR (TUTUP KAS)
+          ========================================================================= */}
+      {isClosingCashModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-5 border border-amber-200 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-amber-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-black">Input Kas Akhir / Tutup Kas</h3>
+                  <p className="text-[11px] text-stone-700">{formatIndonesianDate(selectedDate)}</p>
+                </div>
+              </div>
               <button
                 type="button"
-                onClick={() => setDeleteConfirmId(null)}
-                className="flex-1 py-2 rounded-xl bg-stone-100 text-stone-700 font-bold text-xs cursor-pointer"
+                onClick={() => setIsClosingCashModalOpen(false)}
+                className="p-1 rounded-lg text-stone-400 hover:text-black cursor-pointer"
               >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  deleteDailyCashRecord(deleteConfirmId);
-                  setDeleteConfirmId(null);
-                  showToast('Catatan kas berhasil dihapus.');
-                }}
-                className="flex-1 py-2 rounded-xl bg-[#800020] text-white font-bold text-xs hover:bg-[#660019] cursor-pointer"
-              >
-                Ya, Hapus
+                <X className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Rekap perhitungan sistem */}
+            <div className="p-3 bg-amber-50/80 rounded-2xl border border-amber-200 text-xs space-y-1.5">
+              <div className="flex justify-between text-stone-700">
+                <span>Saldo Kas Awal:</span>
+                <span className="font-mono font-bold text-black">{formatRupiah(activeInitialCash)}</span>
+              </div>
+              <div className="flex justify-between text-stone-700">
+                <span>(+) Penjualan Tunai:</span>
+                <span className="font-mono font-bold text-emerald-800">{formatRupiah(dayCashSales)}</span>
+              </div>
+              <div className="flex justify-between text-stone-700">
+                <span>(-) Pengeluaran Kas:</span>
+                <span className="font-mono font-bold text-rose-800">{formatRupiah(dayCashExpenses)}</span>
+              </div>
+              <div className="pt-1.5 border-t border-amber-200 flex justify-between font-extrabold text-amber-950">
+                <span>Total Seharusnya di Laci:</span>
+                <span className="font-mono text-sm">{formatRupiah(expectedTotalCash)}</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveClosingCash} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Uang Fisik Dihitung di Laci (Rp):
+                </label>
+                <input
+                  type="number"
+                  value={closingCashInput}
+                  onChange={(e) => setClosingCashInput(e.target.value)}
+                  placeholder={String(expectedTotalCash)}
+                  className="w-full px-3 py-2 text-base font-mono font-bold text-black border border-amber-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  autoFocus
+                />
+              </div>
+
+              {/* Status Selisih Live */}
+              {closingCashInput && (
+                <div
+                  className={`p-2 rounded-xl text-xs flex items-center justify-between font-bold ${
+                    parseFloat(closingCashInput) - expectedTotalCash === 0
+                      ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
+                      : parseFloat(closingCashInput) - expectedTotalCash > 0
+                      ? 'bg-blue-100 text-blue-900 border border-blue-200'
+                      : 'bg-rose-100 text-rose-900 border border-rose-200'
+                  }`}
+                >
+                  <span>Hasil Selisih Fisik:</span>
+                  <span className="font-mono">
+                    {parseFloat(closingCashInput) - expectedTotalCash === 0
+                      ? 'Pas (Sesuai 100%)'
+                      : `${parseFloat(closingCashInput) - expectedTotalCash > 0 ? '+' : ''}${formatRupiah(
+                          parseFloat(closingCashInput) - expectedTotalCash
+                        )}`}
+                  </span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Catatan Tutup Kas:
+                </label>
+                <input
+                  type="text"
+                  value={closingCashNotes}
+                  onChange={(e) => setClosingCashNotes(e.target.value)}
+                  placeholder="Contoh: Kas fisik dihitung bersama kasir malam"
+                  className="w-full px-3 py-1.5 text-xs border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsClosingCashModalOpen(false)}
+                  className="w-1/2 py-2 rounded-xl text-xs font-bold bg-stone-100 hover:bg-stone-200 text-stone-700 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="w-1/2 py-2 rounded-xl text-xs font-bold bg-amber-700 hover:bg-amber-800 text-white shadow-2xs cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Tutup Kas</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* MODAL KONFIRMASI HAPUS CATATAN PENGELUARAN */}
-      {deleteExpenseConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl border border-rose-200 p-5 max-w-sm w-full space-y-3 text-center">
-            <h4 className="font-black text-sm text-black">Hapus Catatan Pengeluaran Kas?</h4>
-            <p className="text-xs text-stone-600">
-              Catatan ini akan dihapus dari rekap kas keluar toko.
-            </p>
-            <div className="flex gap-2 pt-2">
+      {/* =========================================================================
+          MODAL 3: CEK RINCIAN KAS SELURUHNYA
+          ========================================================================= */}
+      {isCashSummaryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-md w-full p-5 border border-emerald-200 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-emerald-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                  <Banknote className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-black">Rincian Kas Seluruhnya</h3>
+                  <p className="text-[11px] text-stone-700">
+                    {dateMode === 'harian'
+                      ? formatIndonesianDate(selectedDate)
+                      : `${startDate} s/d ${endDate}`}
+                  </p>
+                </div>
+              </div>
               <button
                 type="button"
-                onClick={() => setDeleteExpenseConfirmId(null)}
-                className="flex-1 py-2 rounded-xl bg-stone-100 text-stone-700 font-bold text-xs cursor-pointer"
+                onClick={() => setIsCashSummaryModalOpen(false)}
+                className="p-1 rounded-lg text-stone-400 hover:text-black cursor-pointer"
               >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  deleteExpense(deleteExpenseConfirmId);
-                  setDeleteExpenseConfirmId(null);
-                  showToast('Catatan pengeluaran kas telah dihapus.');
-                }}
-                className="flex-1 py-2 rounded-xl bg-[#800020] text-white font-bold text-xs hover:bg-[#660019] cursor-pointer"
-              >
-                Ya, Hapus
+                <X className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Breakdown Rinci Kas Fisik */}
+            <div className="space-y-2 text-xs">
+              <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200/80 space-y-2">
+                <div className="flex justify-between items-center text-stone-700">
+                  <span>(+) Saldo Kas Awal (Modal):</span>
+                  <span className="font-mono font-bold text-black">{formatRupiah(activeInitialCash)}</span>
+                </div>
+                <div className="flex justify-between items-center text-emerald-800">
+                  <span>(+) Total Penjualan Tunai:</span>
+                  <span className="font-mono font-bold">{formatRupiah(dayCashSales)}</span>
+                </div>
+                <div className="flex justify-between items-center text-rose-800">
+                  <span>(-) Pengeluaran Kas Toko:</span>
+                  <span className="font-mono font-bold">{formatRupiah(dayCashExpenses)}</span>
+                </div>
+                <div className="pt-2 border-t border-stone-200 flex justify-between items-center font-extrabold text-sm text-emerald-950">
+                  <span>Total Kas Fisik Seharusnya:</span>
+                  <span className="font-mono text-base">{formatRupiah(expectedTotalCash)}</span>
+                </div>
+              </div>
+
+              {/* Info Tambahan Non Tunai */}
+              <div className="p-3 bg-[#FFF5F7] rounded-2xl border border-[#F8CCD4] space-y-1.5">
+                <div className="text-[11px] font-bold text-[#800020] flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5" />
+                  <span>Pendapatan Digital (Bank / QRIS):</span>
+                </div>
+                <div className="flex justify-between items-center text-stone-700">
+                  <span>Penjualan Non-Tunai Masuk:</span>
+                  <span className="font-mono font-bold text-black">{formatRupiah(dayDigitalSales)}</span>
+                </div>
+                <p className="text-[10px] text-stone-700">
+                  Uang digital langsung masuk ke rekening bank/merchant dan tidak mempengaruhi fisik laci kasir.
+                </p>
+              </div>
+
+              {/* Status Kas Akhir jika sudah diinput */}
+              {activeClosingCash !== null && (
+                <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 space-y-1">
+                  <div className="flex justify-between items-center text-xs text-amber-950 font-bold">
+                    <span>Kas Fisik Aktual Dihitung:</span>
+                    <span className="font-mono">{formatRupiah(activeClosingCash)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-stone-700">Status Selisih:</span>
+                    <span
+                      className={`font-mono font-extrabold ${
+                        cashDifference === 0
+                          ? 'text-emerald-700'
+                          : cashDifference > 0
+                          ? 'text-blue-700'
+                          : 'text-rose-700'
+                      }`}
+                    >
+                      {cashDifference === 0
+                        ? 'Seimbang (Rp 0)'
+                        : `${cashDifference > 0 ? '+' : ''}${formatRupiah(cashDifference)}`}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsCashSummaryModalOpen(false)}
+              className="w-full py-2.5 rounded-xl text-xs font-bold bg-[#800020] hover:bg-[#990026] text-white cursor-pointer"
+            >
+              Tutup Rincian
+            </button>
           </div>
         </div>
       )}
 
-      {/* Cash Expense Modal */}
-      {isExpenseModalOpen && (
-        <CashExpenseModal
-          isOpen={isExpenseModalOpen}
-          onClose={() => setIsExpenseModalOpen(false)}
-        />
+      {/* =========================================================================
+          MODAL 4: DETAIL STRUK TRANSAKSI
+          ========================================================================= */}
+      {selectedReceiptTx && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-5 border border-[#FCE4E8] shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#FCE4E8]">
+              <div className="flex items-center gap-2">
+                <Receipt className="w-4 h-4 text-[#800020]" />
+                <h3 className="font-black text-sm text-black">Detail Struk Pembelian</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedReceiptTx(null)}
+                className="p-1 rounded-lg text-stone-400 hover:text-black cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Nota Struk Sederhana */}
+            <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200 text-xs space-y-2 font-mono">
+              <div className="text-center pb-2 border-b border-dashed border-stone-300">
+                <div className="font-extrabold text-black uppercase">{storeProfile.name}</div>
+                <div className="text-[10px] text-stone-700">{formatDateTime(selectedReceiptTx.date)}</div>
+                <div className="text-[10px] text-stone-700 font-bold mt-0.5">
+                  No: {selectedReceiptTx.invoiceNo} | Kasir: {selectedReceiptTx.cashierName}
+                </div>
+              </div>
+
+              {/* Items */}
+              <div className="space-y-1.5 py-1 border-b border-dashed border-stone-300">
+                {selectedReceiptTx.items.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-start text-[11px]">
+                    <div>
+                      <div className="font-bold text-black">{item.product.name}</div>
+                      <div className="text-[10px] text-stone-700">
+                        {item.qty} x {formatRupiah(item.product.sellPrice)}
+                      </div>
+                    </div>
+                    <div className="font-bold text-black">
+                      {formatRupiah(item.qty * item.product.sellPrice)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Totals */}
+              <div className="space-y-1 pt-1 text-[11px]">
+                <div className="flex justify-between text-stone-700">
+                  <span>Subtotal:</span>
+                  <span>{formatRupiah(selectedReceiptTx.subtotal)}</span>
+                </div>
+                {selectedReceiptTx.discount > 0 && (
+                  <div className="flex justify-between text-rose-700">
+                    <span>Diskon:</span>
+                    <span>-{formatRupiah(selectedReceiptTx.discount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-extrabold text-sm text-black pt-1 border-t border-stone-300">
+                  <span>Total Bayar:</span>
+                  <span>{formatRupiah(selectedReceiptTx.total)}</span>
+                </div>
+                <div className="flex justify-between text-stone-700 text-[10px]">
+                  <span>Metode: {selectedReceiptTx.paymentMethod.toUpperCase()}</span>
+                  <span>Kembalian: {formatRupiah(selectedReceiptTx.change)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="w-1/2 py-2 rounded-xl text-xs font-bold bg-stone-100 hover:bg-stone-200 text-stone-800 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Cetak Struk</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedReceiptTx(null)}
+                className="w-1/2 py-2 rounded-xl text-xs font-bold bg-[#800020] hover:bg-[#990026] text-white cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

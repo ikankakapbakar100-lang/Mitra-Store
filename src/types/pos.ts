@@ -91,7 +91,7 @@ export interface Customer {
 
 export interface CustomerCartSession {
   id: string;
-  name: string;           // Nama keranjang/pelanggan (e.g. "Pelanggan 1", "Ibu Rina", "Antrean 2")
+  name: string;           // Nama keranjang/pelanggan (e.g. "Pelanggan #001")
   createdAt: string;      // ISO String
   updatedAt: string;      // ISO String
   items: CartItem[];
@@ -99,6 +99,21 @@ export interface CustomerCartSession {
   pointsToRedeem: number;
   taxEnabled: boolean;
   notes?: string;
+}
+
+export interface UnpaidOrder {
+  id: string;
+  customerNumber: number;
+  customerLabel: string;   // e.g. "Pelanggan #001"
+  createdAt: string;       // ISO String
+  updatedAt: string;       // ISO String
+  items: CartItem[];
+  subtotal: number;
+  tax: number;
+  taxEnabled: boolean;
+  total: number;
+  notes?: string;
+  cashierName: string;
 }
 
 export type ExpenseCategory = 

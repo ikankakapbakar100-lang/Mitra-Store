@@ -64,7 +64,7 @@ function POSApp() {
 
   // 2. Mode Kasir POS atau Mode Kelola Toko
   return (
-    <div className="min-h-screen bg-[#FFF0F3] text-black flex flex-col font-sans selection:bg-[#800020] selection:text-white">
+    <div className="min-h-screen text-black flex flex-col font-sans selection:bg-[#800020] selection:text-white">
       
       {/* Top Header */}
       <Header
@@ -77,7 +77,20 @@ function POSApp() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 pb-16 bg-[#FFF0F3]">
+      <main 
+        className="flex-1 bg-cover bg-center bg-fixed min-h-[calc(100vh-4rem)]"
+        style={
+          appMode === 'pos'
+            ? {
+                backgroundImage: `linear-gradient(to bottom, rgba(15, 8, 12, 0.40), rgba(15, 8, 12, 0.58)), url('/assets/aistudio/Sakura_wallpapers_a356b72b.jpg')`,
+              }
+            : appMode === 'management'
+            ? {
+                backgroundImage: `linear-gradient(to bottom, rgba(255, 245, 247, 0.85), rgba(255, 240, 243, 0.92)), url('/assets/aistudio/Pink_aesthetic_background_91fc2399.jpg')`,
+              }
+            : undefined
+        }
+      >
         {/* OPSI 1: KHUSUS KASIR POS (Hanya Catat & Terima Pesanan, Tanpa Tambah Stok) */}
         {appMode === 'pos' && (
           <CashierView />

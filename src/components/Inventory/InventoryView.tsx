@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { usePOS } from '../../context/POSContext';
 import { Product } from '../../types/pos';
 import { formatRupiah } from '../../utils/format';
@@ -27,12 +27,16 @@ import {
   FileSpreadsheet,
   Upload,
   ShieldCheck,
-  Download,
-  Volume2
+  Table,
+  Grid3X3,
+  FolderOpen,
+  Image as ImageIcon,
+  Sparkles
 } from 'lucide-react';
 import { CameraScannerModal } from '../Camera/CameraScannerModal';
 import { parseProductsFromCSV } from '../../utils/dataExportImport';
 
+export type InventoryLayoutMode = 'grid-large' | 'grid-compact' | 'list' | 'dense-table';
 type HighlightFilter = 'all' | 'top_seller' | 'low_stock' | 'out_of_stock';
 
 export const InventoryView: React.FC = () => {
@@ -48,9 +52,6 @@ export const InventoryView: React.FC = () => {
     transactions,
     exportAllProductsCSV,
     bulkImportProducts,
-    isStoragePersisted,
-    setIsVoiceSettingsModalOpen,
-    voiceSettings,
   } = usePOS();
 
   // Search & Filter state
@@ -67,7 +68,24 @@ export const InventoryView: React.FC = () => {
   const [isConfirmingDeleteProduct, setIsConfirmingDeleteProduct] = useState<boolean>(false);
   const [isCameraPhotoModalOpen, setIsCameraPhotoModalOpen] = useState<boolean>(false);
   const [isSyncingShopee, setIsSyncingShopee] = useState<boolean>(false);
-  const [viewDensity, setViewDensity] = useState<'compact' | 'grid'>('compact');
+  const [layoutMode, setLayoutMode] = useState<InventoryLayoutMode>('grid-compact');
+
+  // Akses Kamera Device & File Galeri Pribadi
+  const cameraFileInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setFormImageUrl(event.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   // CSV Import State
   const [isImportModalOpen, setIsImportModalOpen] = useState<boolean>(false);
@@ -371,184 +389,144 @@ export const InventoryView: React.FC = () => {
         </button>
       </div>
 
-      {/* Voice Notification Banner for Owner */}
-      {(lowStockCount > 0 || outOfStockCount > 0) && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-2xl bg-[#FFF5F7] border border-[#F8CCD4]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#800020] text-white flex items-center justify-center shrink-0 shadow-2xs">
-              <Volume2 className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-black flex items-center gap-2">
-                <span>Notifikasi Suara Stok Otomatis</span>
-                <span className={`text-[9px] px-2 py-0.2 rounded-full font-bold ${
-                  voiceSettings.enabled ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-200 text-stone-600'
-                }`}>
-                  {voiceSettings.enabled ? 'Aktif' : 'Nonaktif'}
-                </span>
-              </div>
-              <div className="text-[11px] text-stone-600">
-                {outOfStockCount > 0 ? `${outOfStockCount} produk stok habis. ` : ''}
-                {lowStockCount > 0 ? `${lowStockCount} produk stok menipis.` : ''} Owner bisa atur kalimat suara peringatan sesuai keinginan.
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setIsVoiceSettingsModalOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#800020] hover:text-white text-[#800020] border border-[#F8CCD4] text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer shrink-0"
-          >
-            <Volume2 className="w-3.5 h-3.5" />
-            <span>Atur Suara &amp; Uji Coba</span>
-          </button>
-        </div>
-      )}
-
-      {/* 2. SEARCH & KATEGORI BAR (TAMBAH & HAPUS KATEGORI) */}
-      <div className="bg-white p-3.5 rounded-3xl border border-[#FCE4E8] shadow-2xs space-y-3">
-        <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
+      {/* 2. SEARCH & KATEGORI BAR (KOMPAK, PILIHAN SUSUNAN MULTI-DEVICE & KATEGORI) */}
+      <div className="bg-white/95 backdrop-blur-md p-3 sm:p-3.5 rounded-3xl border border-[#FCE4E8] shadow-2xs space-y-2.5">
+        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center justify-between">
           
-          {/* Search box */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-500" />
+          {/* Search box diperkecil & ringkas sesuai kebutuhan */}
+          <div className="relative w-full sm:w-52 md:w-60 shrink-0">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-stone-500" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari cetakan kue, loyang, perabot..."
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-[#800020]"
+              placeholder="Cari cetakan, loyang..."
+              className="w-full pl-8 pr-6 py-1.5 text-xs rounded-xl border border-[#FCE4E8] bg-white text-black placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#800020]"
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-black cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-black cursor-pointer"
               >
                 ×
               </button>
             )}
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <button
-              onClick={() => setViewDensity(viewDensity === 'compact' ? 'grid' : 'compact')}
-              className={`p-1.5 sm:px-2.5 sm:py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1 cursor-pointer shrink-0 ${
-                viewDensity === 'compact'
-                  ? 'bg-[#FCE8EB] text-[#800020] border-[#F8CCD4]'
-                  : 'bg-white text-black border-[#FCE4E8] hover:bg-[#FFF5F7]'
-              }`}
-              title={viewDensity === 'compact' ? 'Mode Kompak HP (Muat 10+ Stok Sekaligus Tanpa Scroll)' : 'Mode Grid Mini'}
-            >
-              {viewDensity === 'compact' ? (
-                <>
-                  <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="text-[10px] sm:text-[11px] font-bold">10+ HP</span>
-                </>
-              ) : (
-                <>
-                  <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline text-[11px] font-bold">Grid</span>
-                </>
-              )}
-            </button>
+          {/* Action buttons: Pilihan Pola Susunan Multi-Device, Ekspor Excel, Kategori & Tambah Produk */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap justify-between sm:justify-end">
+            
+            {/* Pola Susunan Produk (Grid Besar, Grid Kompak, List Baris, Tabel Rapat) */}
+            <div className="flex items-center p-0.5 bg-stone-100/90 rounded-xl border border-stone-200/80 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setLayoutMode('grid-large')}
+                className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  layoutMode === 'grid-large'
+                    ? 'bg-[#800020] text-white shadow-2xs'
+                    : 'text-stone-600 hover:text-black hover:bg-white'
+                }`}
+                title="Pola 1: Kartu Foto Besar (Visual Tablet & Layar Lebar)"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setLayoutMode('grid-compact')}
+                className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  layoutMode === 'grid-compact'
+                    ? 'bg-[#800020] text-white shadow-2xs'
+                    : 'text-stone-600 hover:text-black hover:bg-white'
+                }`}
+                title="Pola 2: Grid Kompak (Standar HP / POS Cepat)"
+              >
+                <Grid3X3 className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setLayoutMode('list')}
+                className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  layoutMode === 'list'
+                    ? 'bg-[#800020] text-white shadow-2xs'
+                    : 'text-stone-600 hover:text-black hover:bg-white'
+                }`}
+                title="Pola 3: Baris Daftar Rinci (Informasi Lengkap HPP & Stok)"
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setLayoutMode('dense-table')}
+                className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  layoutMode === 'dense-table'
+                    ? 'bg-[#800020] text-white shadow-2xs'
+                    : 'text-stone-600 hover:text-black hover:bg-white'
+                }`}
+                title="Pola 4: Tabel Rapat Kasir (Muat 15+ Stok per Layar Tanpa Scroll)"
+              >
+                <Table className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
-            <button
-              onClick={handleManualShopeeSync}
-              disabled={isSyncingShopee}
-              className="p-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold border border-[#F8CCD4] bg-[#FCE8EB] text-[#800020] hover:bg-[#F8CCD4] flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Sinkronkan dengan Shopee"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isSyncingShopee ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Shopee</span>
-            </button>
-
-            {/* Tombol Ekspor Excel (.csv) */}
+            {/* Icon kecil Unduh Cadangan Excel */}
             <button
               type="button"
               onClick={exportAllProductsCSV}
-              className="p-1.5 sm:px-2.5 sm:py-2 rounded-xl text-xs font-bold border border-[#FCE4E8] bg-white text-stone-800 hover:bg-[#FFF5F7] hover:text-[#800020] flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
-              title="Unduh seluruh data stok produk ke file Excel (.csv) untuk cadangan offline"
+              className="p-1.5 rounded-xl text-xs font-bold border border-[#FCE4E8] bg-white text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-2xs"
+              title="Unduh Cadangan Excel (.csv)"
+              aria-label="Unduh Cadangan Excel"
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
-              <span className="hidden md:inline">Excel</span>
             </button>
 
-            {/* Tombol Impor Massal Excel / CSV */}
+            {/* Tombol Kelola Kategori */}
             <button
               type="button"
-              onClick={() => {
-                setImportParsedProducts([]);
-                setImportNewCategories([]);
-                setImportErrors([]);
-                setIsImportModalOpen(true);
-              }}
-              className="p-1.5 sm:px-2.5 sm:py-2 rounded-xl text-xs font-bold border border-[#FCE4E8] bg-white text-stone-800 hover:bg-[#FFF5F7] hover:text-[#800020] flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
-              title="Impor massal puluhan atau ratusan produk dari file CSV / Excel"
-            >
-              <Upload className="w-3.5 h-3.5 text-[#800020]" />
-              <span className="hidden md:inline">Impor</span>
-            </button>
-
-            <button
               onClick={() => setIsCategoryManageOpen(true)}
-              className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-bold border border-[#FCE4E8] bg-white text-black hover:bg-[#FFF5F7] flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Kelola & Hapus Kategori"
+              className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold border border-[#FCE4E8] bg-white text-black hover:bg-[#FFF5F7] flex items-center gap-1 transition-colors cursor-pointer shrink-0 shadow-2xs"
+              title="Kelola & Tambah/Edit Kategori"
             >
               <span>Kategori</span>
             </button>
 
+            {/* Tombol Tambah Produk */}
             <button
+              type="button"
               onClick={handleOpenAddProduct}
-              className="px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer shrink-0"
+              className="px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl text-xs font-bold text-white bg-[#800020] hover:bg-[#660019] transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer shrink-0 active:scale-95"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Tambah</span>
+              <span>Tambah Produk</span>
             </button>
           </div>
         </div>
 
-        {/* Categories Chips with Quick Delete Support */}
+        {/* Daftar Kategori (Tanpa logo X hapus di chip, klik chip untuk memfilter) */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           {categories.map((cat) => {
             const isSelected = selectedCategory === cat;
-            const isDeletable = cat !== 'Semua';
-
             return (
-              <div key={cat} className="relative group shrink-0 flex items-center">
-                <button
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 ${
-                    isSelected
-                      ? 'bg-[#800020] text-white shadow-2xs'
-                      : 'bg-[#FFF5F7] text-black hover:bg-[#FCE8EB] border border-[#FCE4E8]'
-                  }`}
-                >
-                  <span>{cat}</span>
-                </button>
-
-                {/* Quick Delete Category Button */}
-                {isDeletable && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCategoryToDelete(cat);
-                      setIsCategoryManageOpen(true);
-                    }}
-                    title={`Hapus kategori ${cat}`}
-                    className="ml-0.5 p-1 text-stone-400 hover:text-[#800020] hover:bg-[#FCE8EB] rounded-lg transition-colors cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3 py-1 text-xs font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 ${
+                  isSelected
+                    ? 'bg-[#800020] text-white shadow-2xs'
+                    : 'bg-[#FFF5F7] text-black hover:bg-[#FCE8EB] border border-[#FCE4E8]'
+                }`}
+              >
+                <span>{cat}</span>
+              </button>
             );
           })}
 
-          {/* Quick Add Category Button */}
+          {/* Quick Add Kategori Button */}
           <button
+            type="button"
             onClick={() => setIsCategoryManageOpen(true)}
-            className="px-2.5 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap bg-white text-[#800020] border border-dashed border-[#F8CCD4] hover:bg-[#FFF5F7] transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+            className="px-2.5 py-1 text-xs font-bold rounded-xl whitespace-nowrap bg-white text-[#800020] border border-dashed border-[#F8CCD4] hover:bg-[#FFF5F7] transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
           >
             <Plus className="w-3 h-3" />
             <span>Kategori</span>
@@ -556,202 +534,395 @@ export const InventoryView: React.FC = () => {
         </div>
       </div>
 
-      {/* 2.5 STATUS KEAMANAN DATA 100% (DUAL-LAYER LOCALSTORAGE + INDEXEDDB) */}
-      <div className="bg-emerald-50/90 px-3.5 py-2.5 rounded-2xl border border-emerald-200 shadow-2xs flex flex-wrap items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-          <span className="font-extrabold text-emerald-950">
-            Proteksi 100% Aman:
-          </span>
-          <span className="text-emerald-900 text-[11px] font-medium hidden sm:inline">
-            Seluruh {products.length} stok tersimpan ganda (LocalStorage + IndexedDB). Data tidak akan berubah kecuali diubah pengguna.
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={exportAllProductsCSV}
-            className="text-[11px] font-bold text-emerald-800 hover:text-emerald-950 flex items-center gap-1 cursor-pointer underline"
-            title="Download cadangan data stok ke format Excel (.csv)"
-          >
-            <Download className="w-3 h-3 text-emerald-700" />
-            <span>Unduh Cadangan Excel</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 3. DESAIN STOK BARANG MINIMALIS & HEMAT SPACE (FOTO + NAMA STOK) */}
-      {/* Saat produk ditekan, langsung buka edit modal untuk ubah stok, harga, & saldo */}
+      {/* 3. DAFTAR PRODUK DENGAN 4 PILIHAN POLA SUSUNAN MULTI-DEVICE */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between px-2 text-xs text-stone-700">
-          <span>Menampilkan {filteredProducts.length} produk cetakan &amp; perabot</span>
-          <span className="text-[11px] text-[#800020] font-bold">
-            💡 Tekan produk untuk mengedit stok &amp; harga
-          </span>
-        </div>
-
         {filteredProducts.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-[#FCE4E8] p-12 text-center">
-            <Package className="w-8 h-8 text-stone-400 mx-auto mb-2 opacity-50" />
-            <h4 className="text-sm font-black text-black">
-              Tidak Ada Stok Sesuai Filter
-            </h4>
-            <p className="text-xs text-stone-600 font-medium mt-1">
-              Coba ganti filter highlight atau pilih kategori lain.
-            </p>
+          <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-[#FCE4E8] p-10 text-center space-y-3 shadow-2xs">
+            <div className="w-14 h-14 rounded-2xl bg-[#FFF0F3] text-[#800020] flex items-center justify-center mx-auto border border-[#F8CCD4]">
+              <PackageX className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-sm text-black">
+                Tidak ada produk ditemukan
+              </h3>
+              <p className="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
+                {searchQuery
+                  ? `Tidak ada stok barang yang cocok dengan kata kunci "${searchQuery}".`
+                  : 'Belum ada produk untuk kategori ini. Tekan tombol Tambah Produk di atas.'}
+              </p>
+            </div>
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="px-3 py-1.5 text-xs font-bold text-[#800020] bg-[#FCE8EB] hover:bg-[#F8CCD4] rounded-xl cursor-pointer"
+              >
+                Reset Pencarian
+              </button>
+            )}
           </div>
         ) : (
-          viewDensity === 'compact' ? (
-            /* MODE 1 (DEFAULT HP): Ultra-Kompak 2 Kolom, Image 38-42px Terkompresi, Muat 10+ Stok Langsung di HP Tanpa Scroll */
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1.5 sm:gap-2">
-              {filteredProducts.map((p) => {
-                const isTopSeller = topSellerIds.has(p.id);
-                const isOutOfStock = p.stock <= 0;
-                const isLowStock = !isOutOfStock && p.stock <= p.minStock;
+          <>
+            {/* POLA 1: KARTU FOTO BESAR (VISUAL LAPTOP & TABLET) */}
+            {layoutMode === 'grid-large' && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-3">
+                {filteredProducts.map((p) => {
+                  const isTopSeller = topSellerIds.has(p.id);
+                  const isOutOfStock = p.stock <= 0;
+                  const isLowStock = !isOutOfStock && p.stock <= p.minStock;
 
-                return (
-                  <div
-                    key={p.id}
-                    onClick={() => handleOpenEditProduct(p)}
-                    className={`group relative bg-white rounded-xl border p-1.5 sm:p-2 text-left transition-all cursor-pointer flex items-center gap-1.5 sm:gap-2 hover:border-[#800020] hover:shadow-xs h-[50px] sm:h-[56px] ${
-                      isOutOfStock
-                        ? 'border-stone-300 bg-stone-50/70 opacity-70'
-                        : isLowStock
-                        ? 'border-[#F8CCD4] bg-[#FFF5F7]'
-                        : 'border-[#FCE4E8]'
-                    }`}
-                    title="Klik untuk mengubah stok & info barang"
-                  >
-                    {/* Foto Stok Mini Terkompresi (38x38 di HP, 44x44 di desktop) */}
-                    <div className="relative w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-[#FFF5F7] overflow-hidden shrink-0 border border-[#F8CCD4] flex items-center justify-center">
-                      <Package className="w-4 h-4 text-[#800020]/40 absolute pointer-events-none" />
-                      <img
-                        src={getOptimizedThumb(p.imageUrl)}
-                        alt={p.name}
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover relative z-1 group-hover:scale-105 transition-transform"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                      {isTopSeller && (
-                        <span className="absolute top-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-amber-500 z-10" title="Terlaris" />
-                      )}
-                    </div>
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => handleOpenEditProduct(p)}
+                      className={`group relative bg-white/95 backdrop-blur-md rounded-2xl border p-2 text-left transition-all cursor-pointer flex flex-col justify-between hover:border-[#800020] hover:shadow-md ${
+                        isOutOfStock
+                          ? 'border-stone-300 bg-stone-50/80 opacity-75'
+                          : isLowStock
+                          ? 'border-[#F8CCD4] bg-[#FFF5F7]'
+                          : 'border-[#FCE4E8]'
+                      }`}
+                      title="Klik untuk mengubah stok & info barang"
+                    >
+                      {/* Foto Produk Aspek Persegi */}
+                      <div className="relative w-full aspect-square rounded-xl bg-[#FFF5F7] overflow-hidden border border-[#F8CCD4] mb-2 flex items-center justify-center">
+                        <Package className="w-8 h-8 text-[#800020]/25 absolute pointer-events-none" />
+                        <img
+                          src={getOptimizedThumb(p.imageUrl)}
+                          alt={p.name}
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover relative z-1 group-hover:scale-105 transition-transform"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                        {/* Status Badges Overlay */}
+                        <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center justify-between z-10">
+                          {isTopSeller ? (
+                            <span className="px-1.5 py-0.5 text-[9px] font-black rounded-md bg-amber-500 text-white shadow-2xs flex items-center gap-0.5">
+                              <Flame className="w-2.5 h-2.5" /> Terlaris
+                            </span>
+                          ) : <span />}
+                          <span
+                            className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md font-black shadow-2xs ${
+                              isOutOfStock
+                                ? 'bg-black text-white'
+                                : isLowStock
+                                ? 'bg-[#800020] text-white'
+                                : 'bg-emerald-600 text-white'
+                            }`}
+                          >
+                            Stok: {p.stock}
+                          </span>
+                        </div>
+                      </div>
 
-                    {/* Info Stok Ringkas & Hemat Tampilan */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-0.5">
-                      <div className="flex items-center justify-between gap-1">
-                        <h3 className="text-[11px] sm:text-xs font-bold text-black truncate leading-tight group-hover:text-[#800020] transition-colors">
+                      {/* Detail Nama, Kategori, & Harga */}
+                      <div className="space-y-1">
+                        <h3 className="text-xs font-bold text-black group-hover:text-[#800020] transition-colors line-clamp-2 leading-tight">
                           {p.name}
                         </h3>
-                        <span className={`text-[9px] font-mono px-1 rounded font-bold shrink-0 ${
-                          isOutOfStock 
-                            ? 'bg-black text-white' 
-                            : isLowStock 
-                            ? 'bg-[#FCE8EB] text-[#800020]' 
-                            : 'text-stone-700'
-                        }`}>
-                          {p.stock}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-[10.5px] sm:text-xs font-black font-mono text-[#800020] leading-none">
-                          {formatRupiah(p.sellPrice)}
-                        </span>
-                        <span className="text-[9px] text-stone-500 group-hover:text-black flex items-center gap-0.5">
-                          <Edit3 className="w-2.5 h-2.5" />
-                          <span className="hidden sm:inline">Edit</span>
-                        </span>
+                        <div className="text-[10px] text-stone-500 truncate">
+                          {p.category} • SKU: {p.sku}
+                        </div>
+                        <div className="pt-1 flex items-baseline justify-between">
+                          <span className="text-xs font-black font-mono text-[#800020]">
+                            {formatRupiah(p.sellPrice)}
+                          </span>
+                          <span className="text-[10px] text-stone-400 font-mono">
+                            HPP: {formatRupiah(p.buyPrice)}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            /* MODE 2: Grid Mini dengan Gambar Kompresi Rendah Space (h-14 sm:h-16) */
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-2.5">
-              {filteredProducts.map((p) => {
-                const isTopSeller = topSellerIds.has(p.id);
-                const isOutOfStock = p.stock <= 0;
-                const isLowStock = !isOutOfStock && p.stock <= p.minStock;
+                  );
+                })}
+              </div>
+            )}
 
-                return (
-                  <div
-                    key={p.id}
-                    onClick={() => handleOpenEditProduct(p)}
-                    className={`group relative bg-white rounded-xl border p-1.5 text-left transition-all cursor-pointer flex flex-col justify-between hover:border-[#800020] hover:shadow-xs ${
-                      isOutOfStock
-                        ? 'border-stone-300 bg-stone-50/70 opacity-70'
-                        : isLowStock
-                        ? 'border-[#F8CCD4] bg-[#FFF5F7]'
-                        : 'border-[#FCE4E8]'
-                    }`}
-                    title="Klik untuk mengubah stok & info barang"
-                  >
-                    {/* Visual Foto Stok Mini Terkompresi (h-14 sm:h-16) */}
-                    <div className="relative w-full h-14 sm:h-16 rounded-lg bg-[#FFF5F7] overflow-hidden mb-1.5 flex items-center justify-center border border-[#F8CCD4]">
-                      <Package className="w-5 h-5 text-[#800020]/40 absolute pointer-events-none" />
-                      <img
-                        src={getOptimizedThumb(p.imageUrl)}
-                        alt={p.name}
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover relative z-1 group-hover:scale-105 transition-transform duration-200"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
+            {/* POLA 2: GRID KOMPAK (STANDAR HP KASIR HEMAT RUANG) */}
+            {layoutMode === 'grid-compact' && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1.5 sm:gap-2">
+                {filteredProducts.map((p) => {
+                  const isTopSeller = topSellerIds.has(p.id);
+                  const isOutOfStock = p.stock <= 0;
+                  const isLowStock = !isOutOfStock && p.stock <= p.minStock;
 
-                      {/* Highlight Badge */}
-                      <div className="absolute top-1 left-1 flex flex-col gap-0.5 z-10">
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => handleOpenEditProduct(p)}
+                      className={`group relative bg-white/95 backdrop-blur-md rounded-xl border p-1.5 sm:p-2 text-left transition-all cursor-pointer flex items-center gap-1.5 sm:gap-2 hover:border-[#800020] hover:shadow-xs h-[52px] sm:h-[58px] ${
+                        isOutOfStock
+                          ? 'border-stone-300 bg-stone-50/70 opacity-70'
+                          : isLowStock
+                          ? 'border-[#F8CCD4] bg-[#FFF5F7]'
+                          : 'border-[#FCE4E8]'
+                      }`}
+                      title="Klik untuk mengubah stok & info barang"
+                    >
+                      <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-[#FFF5F7] overflow-hidden shrink-0 border border-[#F8CCD4] flex items-center justify-center">
+                        <Package className="w-4 h-4 text-[#800020]/40 absolute pointer-events-none" />
+                        <img
+                          src={getOptimizedThumb(p.imageUrl)}
+                          alt={p.name}
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover relative z-1 group-hover:scale-105 transition-transform"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
                         {isTopSeller && (
-                          <span className="px-1 py-0.2 rounded text-[7px] font-bold bg-amber-500 text-white">
-                            🔥 Laris
-                          </span>
-                        )}
-                        {isOutOfStock && (
-                          <span className="px-1 py-0.2 rounded text-[7px] font-bold bg-black text-white">
-                            Habis
-                          </span>
-                        )}
-                        {isLowStock && (
-                          <span className="px-1 py-0.2 rounded text-[7px] font-bold bg-[#800020] text-white">
-                            Tipis
-                          </span>
+                          <span className="absolute top-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-amber-500 z-10" title="Terlaris" />
                         )}
                       </div>
 
-                      {/* Stock pill */}
-                      <div className="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-black/80 text-[8px] font-mono text-white">
-                        {p.stock} {p.unit}
-                      </div>
-                    </div>
-
-                    {/* Nama Stok & Harga */}
-                    <div className="space-y-0.5">
-                      <h3 className="text-[11px] font-bold text-black line-clamp-1 leading-tight group-hover:text-[#800020] transition-colors">
-                        {p.name}
-                      </h3>
-
-                      <div className="flex items-center justify-between text-[10.5px] pt-1 border-t border-[#FCE4E8]">
-                        <span className="font-mono font-bold text-[#800020]">
-                          {formatRupiah(p.sellPrice)}
-                        </span>
-                        <span className="text-[9px] text-stone-500 group-hover:text-black flex items-center gap-0.5 font-medium">
-                          <Edit3 className="w-2.5 h-2.5" />
-                          Edit
-                        </span>
+                      <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-0.5">
+                        <div className="flex items-center justify-between gap-1">
+                          <h3 className="text-[11px] sm:text-xs font-bold text-black truncate leading-tight group-hover:text-[#800020] transition-colors">
+                            {p.name}
+                          </h3>
+                          <span
+                            className={`text-[9px] font-mono px-1 rounded font-bold shrink-0 ${
+                              isOutOfStock
+                                ? 'bg-black text-white'
+                                : isLowStock
+                                ? 'bg-[#FCE8EB] text-[#800020]'
+                                : 'text-stone-700'
+                            }`}
+                          >
+                            {p.stock}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-[10.5px] sm:text-xs font-black font-mono text-[#800020] leading-none">
+                            {formatRupiah(p.sellPrice)}
+                          </span>
+                          <span className="text-[9px] text-stone-400 font-mono hidden sm:inline">
+                            {p.unit}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )
+                  );
+                })}
+              </div>
+            )}
+
+            {/* POLA 3: BARIS DAFTAR RINCI (DETAIL LENGKAP STOK & PROFIT) */}
+            {layoutMode === 'list' && (
+              <div className="space-y-1.5">
+                {filteredProducts.map((p) => {
+                  const isTopSeller = topSellerIds.has(p.id);
+                  const isOutOfStock = p.stock <= 0;
+                  const isLowStock = !isOutOfStock && p.stock <= p.minStock;
+                  const profitMargin = p.sellPrice - p.buyPrice;
+                  const marginPct = p.sellPrice > 0 ? Math.round((profitMargin / p.sellPrice) * 100) : 0;
+
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => handleOpenEditProduct(p)}
+                      className={`group bg-white/95 backdrop-blur-md rounded-2xl border p-2 sm:p-3 text-left transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 hover:border-[#800020] hover:shadow-xs ${
+                        isOutOfStock
+                          ? 'border-stone-300 bg-stone-50/80 opacity-75'
+                          : isLowStock
+                          ? 'border-[#F8CCD4] bg-[#FFF5F7]'
+                          : 'border-[#FCE4E8]'
+                      }`}
+                      title="Klik untuk mengubah stok & info barang"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="relative w-11 h-11 rounded-xl bg-[#FFF5F7] overflow-hidden shrink-0 border border-[#F8CCD4] flex items-center justify-center">
+                          <Package className="w-5 h-5 text-[#800020]/30 absolute pointer-events-none" />
+                          <img
+                            src={getOptimizedThumb(p.imageUrl)}
+                            alt={p.name}
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover relative z-1 group-hover:scale-105 transition-transform"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <h3 className="text-xs sm:text-sm font-bold text-black truncate group-hover:text-[#800020] transition-colors">
+                              {p.name}
+                            </h3>
+                            {isTopSeller && (
+                              <span className="px-1.5 py-0.2 text-[9px] font-black rounded bg-amber-500 text-white shrink-0">
+                                Terlaris
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] sm:text-[11px] text-stone-500 flex items-center gap-2 mt-0.5">
+                            <span className="font-mono">SKU: {p.sku}</span>
+                            <span>•</span>
+                            <span>{p.category}</span>
+                            <span>•</span>
+                            <span className="font-mono">{p.unit}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-5 border-t sm:border-t-0 pt-2 sm:pt-0 border-stone-100">
+                        {/* Status & Jumlah Stok */}
+                        <div className="text-left sm:text-right">
+                          <div className="flex items-center gap-1.5 sm:justify-end">
+                            <span className="text-[10px] text-stone-500">Stok:</span>
+                            <span
+                              className={`text-xs font-mono font-black px-1.5 py-0.5 rounded ${
+                                isOutOfStock
+                                  ? 'bg-black text-white'
+                                  : isLowStock
+                                  ? 'bg-[#FCE8EB] text-[#800020]'
+                                  : 'bg-emerald-100 text-emerald-800'
+                              }`}
+                            >
+                              {p.stock} {p.unit}
+                            </span>
+                          </div>
+                          <div className="text-[9px] text-stone-400 mt-0.5">
+                            Batas alert: min {p.minStock}
+                          </div>
+                        </div>
+
+                        {/* Harga Modal vs Harga Jual */}
+                        <div className="text-right">
+                          <div className="text-xs sm:text-sm font-black font-mono text-[#800020]">
+                            {formatRupiah(p.sellPrice)}
+                          </div>
+                          <div className="text-[10px] text-stone-400 font-mono">
+                            HPP: {formatRupiah(p.buyPrice)} (+{marginPct}%)
+                          </div>
+                        </div>
+
+                        {/* Tombol Aksi Edit */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditProduct(p);
+                          }}
+                          className="px-2.5 py-1 text-xs font-bold text-[#800020] bg-[#FFF0F3] hover:bg-[#800020] hover:text-white border border-[#F8CCD4] rounded-xl transition-all cursor-pointer shadow-2xs shrink-0 flex items-center gap-1"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span className="hidden md:inline">Edit</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* POLA 4: TABEL RAPAT KASIR (MUAT 15+ STOK PER LAYAR TANPA BANYAK SCROLL) */}
+            {layoutMode === 'dense-table' && (
+              <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-[#FCE4E8] shadow-2xs overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-[#FFF0F3] border-b border-[#FCE4E8] text-[10px] uppercase tracking-wider text-[#800020] font-black">
+                        <th className="py-2 px-2.5 w-10 text-center">Foto</th>
+                        <th className="py-2 px-3">Nama Produk &amp; SKU</th>
+                        <th className="py-2 px-2.5">Kategori</th>
+                        <th className="py-2 px-2.5 text-center">Stok</th>
+                        <th className="py-2 px-2.5 text-center hidden md:table-cell">Min Alert</th>
+                        <th className="py-2 px-2.5 text-right hidden sm:table-cell">Harga Modal</th>
+                        <th className="py-2 px-3 text-right">Harga Jual</th>
+                        <th className="py-2 px-2 text-center w-16">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#FCE4E8]">
+                      {filteredProducts.map((p, idx) => {
+                        const isTopSeller = topSellerIds.has(p.id);
+                        const isOutOfStock = p.stock <= 0;
+                        const isLowStock = !isOutOfStock && p.stock <= p.minStock;
+
+                        return (
+                          <tr
+                            key={p.id}
+                            onClick={() => handleOpenEditProduct(p)}
+                            className={`hover:bg-[#FFF5F7] cursor-pointer transition-colors ${
+                              isOutOfStock
+                                ? 'bg-stone-50/60 text-stone-500'
+                                : isLowStock
+                                ? 'bg-[#FFF5F7]/80'
+                                : idx % 2 === 1
+                                ? 'bg-[#FFFBFD]'
+                                : 'bg-white'
+                            }`}
+                          >
+                            <td className="py-1 px-2.5 text-center">
+                              <div className="w-7 h-7 mx-auto rounded-lg bg-[#FFF5F7] overflow-hidden border border-[#F8CCD4] flex items-center justify-center">
+                                <img
+                                  src={getOptimizedThumb(p.imageUrl)}
+                                  alt={p.name}
+                                  loading="lazy"
+                                  referrerPolicy="no-referrer"
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLElement).style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            </td>
+                            <td className="py-1 px-3">
+                              <div className="font-bold text-black hover:text-[#800020] truncate max-w-[200px] sm:max-w-xs">
+                                {p.name}
+                              </div>
+                              <div className="text-[10px] text-stone-400 font-mono">
+                                SKU: {p.sku} {isTopSeller && <span className="text-amber-600 font-bold ml-1">★ Terlaris</span>}
+                              </div>
+                            </td>
+                            <td className="py-1 px-2.5 text-stone-600 whitespace-nowrap text-[11px]">
+                              {p.category}
+                            </td>
+                            <td className="py-1 px-2.5 text-center">
+                              <span
+                                className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded ${
+                                  isOutOfStock
+                                    ? 'bg-black text-white'
+                                    : isLowStock
+                                    ? 'bg-[#800020] text-white'
+                                    : 'bg-emerald-100 text-emerald-800'
+                                }`}
+                              >
+                                {p.stock} {p.unit}
+                              </span>
+                            </td>
+                            <td className="py-1 px-2.5 text-center font-mono text-[10px] text-stone-400 hidden md:table-cell">
+                              {p.minStock}
+                            </td>
+                            <td className="py-1 px-2.5 text-right font-mono text-[11px] text-stone-500 hidden sm:table-cell">
+                              {formatRupiah(p.buyPrice)}
+                            </td>
+                            <td className="py-1 px-3 text-right font-mono font-bold text-xs text-[#800020]">
+                              {formatRupiah(p.sellPrice)}
+                            </td>
+                            <td className="py-1 px-2 text-center" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditProduct(p)}
+                                className="p-1 rounded-lg text-stone-500 hover:text-[#800020] hover:bg-[#FCE8EB] cursor-pointer"
+                                title="Edit stok"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

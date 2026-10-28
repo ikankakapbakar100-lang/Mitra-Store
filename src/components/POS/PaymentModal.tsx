@@ -26,21 +26,27 @@ interface PaymentModalProps {
 export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
   const { cartTotal, processCheckout, selectedCustomer } = usePOS();
 
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('qris');
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('tunai');
   const [cashAmountInput, setCashAmountInput] = useState<string>(cartTotal.toString());
   const [notesInput, setNotesInput] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const cashInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Sync inputs on open
+  // Sync inputs on open & auto-focus cash input
   useEffect(() => {
     if (isOpen) {
+      setSelectedMethod('tunai');
       setCashAmountInput(cartTotal.toString());
       setErrorMessage('');
       setNotesInput('');
       setIsProcessing(false);
+      setTimeout(() => {
+        cashInputRef.current?.focus();
+        cashInputRef.current?.select();
+      }, 60);
     }
   }, [isOpen, cartTotal]);
 
@@ -126,9 +132,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
   };
 
   const methodsList: { id: PaymentMethod; label: string; icon: string }[] = [
-    { id: 'qris', label: 'QRIS', icon: 'qris' },
+    { id: 'tunai', label: '💵 Uang Tunai', icon: 'tunai' },
+    { id: 'qris', label: '📱 QRIS', icon: 'qris' },
     { id: 'shopeepay', label: 'ShopeePay', icon: 'shopeepay' },
-    { id: 'tunai', label: 'Uang Tunai', icon: 'tunai' },
     { id: 'gopay', label: 'GoPay', icon: 'gopay' },
     { id: 'ovo', label: 'OVO', icon: 'ovo' },
     { id: 'dana', label: 'DANA', icon: 'dana' },
@@ -144,10 +150,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
         <div className="flex items-center justify-between pb-3 border-b border-[#FCE4E8]">
           <div>
             <h3 className="font-black text-base text-black">
-              Metode Pembayaran
+              Pembayaran Kasir
             </h3>
             <p className="text-xs text-stone-600">
-              Pilih pembayaran digital atau tunai
+              Otomatis mode Uang Tunai (Cash) atau pilih metode lain
             </p>
           </div>
           <button 
@@ -162,13 +168,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
         <div className="mt-4 p-4 rounded-2xl bg-[#800020] text-white flex items-center justify-between shadow-md shadow-rose-950/20">
           <div>
             <span className="text-[10px] text-pink-200 uppercase tracking-wider font-black">
-              Total Tagihan
+              Total Tagihan Belanja
             </span>
-            {selectedCustomer && (
-              <div className="text-xs text-white font-bold">
-                {selectedCustomer.name} ({selectedCustomer.tier})
-              </div>
-            )}
+            <div className="text-xs text-rose-100 font-semibold mt-0.5">
+              Pembayaran Tunai Langsung
+            </div>
           </div>
           <div className="text-2xl font-black font-mono text-white">
             {formatRupiah(cartTotal)}
@@ -240,10 +244,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
                   Uang Tunai Diterima:
                 </label>
                 <input
+                  ref={cashInputRef}
+                  autoFocus
                   type="text"
                   value={cashAmountInput}
                   onChange={(e) => setCashAmountInput(e.target.value)}
-                  className="w-full px-3 py-2 text-base font-black font-mono rounded-xl border border-[#FCE4E8] bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#800020]"
+                  className="w-full px-3 py-2 text-base font-black font-mono rounded-xl border border-[#800020] bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#800020] shadow-2xs"
                   placeholder="0"
                 />
               </div>
