@@ -11,7 +11,11 @@ import {
   Bluetooth, 
   ArrowLeft,
   ShoppingCart,
-  Volume2
+  Volume2,
+  ShieldCheck,
+  Wifi,
+  WifiOff,
+  Database,
 } from 'lucide-react';
 import { NotificationDrawer } from './NotificationDrawer';
 import { VoiceAlertSettingsModal } from './Notifications/VoiceAlertSettingsModal';
@@ -25,6 +29,7 @@ interface HeaderProps {
   activeManagementTab: string;
   setActiveManagementTab: (tab: string) => void;
   onOpenShiftModal: () => void;
+  onOpenCashierLoginModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -33,10 +38,12 @@ export const Header: React.FC<HeaderProps> = ({
   onSwitchMode, 
   activeManagementTab, 
   setActiveManagementTab, 
-  onOpenShiftModal 
+  onOpenShiftModal,
+  onOpenCashierLoginModal,
 }) => {
   const { 
     currentUser, 
+    isCashierLoggedIn,
     bluetoothStatus, 
     unreadNotificationsCount,
     lowStockProducts,
@@ -49,7 +56,17 @@ export const Header: React.FC<HeaderProps> = ({
     isVoiceSettingsModalOpen,
     setIsVoiceSettingsModalOpen,
     voiceSettings,
+    setIsStaffModalOpen,
+    isOnline,
+    offlineQueue,
+    setIsOfflineModalOpen,
+    isSupabaseModalOpen,
+    setIsSupabaseModalOpen,
+    supabaseStatus,
   } = usePOS();
+
+  // Strict check: Fitur & tombol HANYA ADA dan HANYA BERFUNGSI jika masuk melalui akun Bos (Admin)
+  const isBoss = Boolean(isCashierLoggedIn && currentUser?.role === 'admin');
 
   const totalCartCount = cart.reduce((acc, item) => acc + item.qty, 0);
 
@@ -58,13 +75,11 @@ export const Header: React.FC<HeaderProps> = ({
 
   const totalStockAlerts = lowStockProducts.length + outOfStockProducts.length;
 
-  // Navigasi Mode Kelola Toko
+  // Navigasi Mode Kelola Toko: Hanya Stok Barang, Rekap Penjualan, dan Shopee Sync (Kelola Pegawai dihapus dari page Kelola Toko)
   const managementNavLinks = [
     { id: 'inventory', label: 'Stok Barang' },
     { id: 'sales_recap', label: 'Rekap Penjualan' },
-    { id: 'customers', label: 'Pelanggan Setia' },
     { id: 'shopee', label: 'Shopee Sync' },
-    { id: 'backup', label: 'Cadangan & Keamanan' },
   ];
 
   return (
@@ -90,8 +105,24 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Logo hanya ditampilkan jika di Mode Kelola Toko */}
             {appMode === 'management' && (
-              <div onClick={onBackToWelcome} className="cursor-pointer">
-                <Logo size="sm" />
+              <div className="flex items-center gap-2">
+                <div onClick={onBackToWelcome} className="cursor-pointer">
+                  <Logo size="sm" />
+                </div>
+                <button
+                  type="button"
+                  onClick={onOpenCashierLoginModal}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white border border-[#FCE4E8] text-[11px] font-bold text-black shadow-2xs hover:bg-[#FCE8EB] hover:border-[#F8CCD4] transition-all cursor-pointer"
+                  title="Klik untuk ganti akun / masuk akun Bos"
+                >
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${isBoss ? 'bg-[#800020]' : 'bg-emerald-600'}`} />
+                  <span className="truncate max-w-[110px]">{currentUser.name.split(' ')[0]}</span>
+                  {isBoss && (
+                    <span className="text-[9px] px-1 py-0.2 bg-[#800020] text-white rounded font-extrabold uppercase">
+                      Bos
+                    </span>
+                  )}
+                </button>
               </div>
             )}
           </div>
@@ -99,16 +130,23 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Zona Tengah: Status Kasir Berisi Nama Kasir Saja (Mode Kasir POS) atau Tab Navigasi (Mode Kelola Toko) */}
           <div className="flex-1 flex justify-center px-1">
             {appMode === 'pos' ? (
-              /* Status Kasir: Yang isinya Nama Kasir Saja */
-              <div 
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#FCE4E8] text-xs font-bold text-black shadow-2xs select-none"
-                title={`Kasir: ${currentUser.name}`}
+              /* Status Kasir: Nama Kasir & Akses Ganti Kasir / Login Akun Bos */
+              <button
+                type="button"
+                onClick={onOpenCashierLoginModal}
+                className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white border border-[#FCE4E8] text-xs font-bold text-black shadow-2xs hover:bg-[#FCE8EB] hover:border-[#F8CCD4] transition-all cursor-pointer"
+                title={`Kasir: ${currentUser.name} (${currentUser.role === 'admin' ? 'BOS / OWNER' : currentUser.role.toUpperCase()}) - Klik untuk ganti kasir / masuk akun Bos`}
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
-                <span className="truncate max-w-[150px] sm:max-w-[240px] font-bold">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${isBoss ? 'bg-[#800020]' : 'bg-emerald-600'}`} />
+                <span className="truncate max-w-[130px] sm:max-w-[220px] font-bold">
                   {currentUser.name}
                 </span>
-              </div>
+                {isBoss && (
+                  <span className="text-[9px] px-1.5 py-0.2 bg-[#800020] text-white rounded font-extrabold uppercase">
+                    Bos
+                  </span>
+                )}
+              </button>
             ) : (
               <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-stone-700">
                 {managementNavLinks.map((link) => {
@@ -221,6 +259,51 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
 
+            {/* Status Jaringan & Antrean Sinkronisasi Offline */}
+            <button
+              type="button"
+              onClick={() => setIsOfflineModalOpen(true)}
+              className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                isOnline
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                  : 'border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 shadow-xs'
+              }`}
+              title={
+                isOnline
+                  ? 'Koneksi Online: Terhubung ke Server (Klik untuk info penyimpanan)'
+                  : `Mode Offline Aktif: ${offlineQueue.length} transaksi tersimpan lokal (Klik untuk kelola & sinkron)`
+              }
+            >
+              {isOnline ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <span className="hidden sm:inline text-[11px] font-bold">Online</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span className="text-[11px] font-extrabold text-amber-900">Offline</span>
+                  {offlineQueue.length > 0 && (
+                    <span className="px-1.5 py-0.2 bg-amber-200 text-amber-900 rounded-full text-[9px] font-black">
+                      {offlineQueue.length}
+                    </span>
+                  )}
+                </>
+              )}
+            </button>
+
+            {/* Supabase Cloud Database Status Button */}
+            <button
+              type="button"
+              onClick={() => setIsSupabaseModalOpen(true)}
+              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl border border-[#3ECF8E]/30 bg-[#3ECF8E]/10 hover:bg-[#3ECF8E]/20 text-[#148356] text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              title="Database Cloud Supabase (Klik untuk status & sinkronisasi)"
+            >
+              <Database className="w-3.5 h-3.5 text-[#24b47e] shrink-0" />
+              <span className="hidden sm:inline text-[11px] font-bold">Supabase</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${supabaseStatus.isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+            </button>
+
             {/* Logo Lonceng Notifikasi (Tetap Dibiarkan) */}
             <div className="relative">
               <button
@@ -248,6 +331,20 @@ export const Header: React.FC<HeaderProps> = ({
                 />
               )}
             </div>
+
+            {/* Tombol Khusus Bos: HANYA MUNCUL DI BAGIAN KASIR POS DENGAN SYARAT MASUK DENGAN AKUN BOS */}
+            {appMode === 'pos' && isBoss && (
+              <button
+                type="button"
+                onClick={() => setIsStaffModalOpen(true)}
+                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-[#F8CCD4] bg-[#FCE8EB] text-[#800020] hover:bg-[#F8CCD4] transition-all cursor-pointer shadow-2xs text-xs font-bold shrink-0"
+                title="Kelola Pegawai & Reset Kata Sandi (Khusus Bos / Admin)"
+              >
+                <ShieldCheck className="w-4 h-4 text-[#800020]" />
+                <span className="hidden md:inline">Kelola Pegawai</span>
+                <span className="md:hidden text-[10px]">Pegawai</span>
+              </button>
+            )}
 
           </div>
         </div>

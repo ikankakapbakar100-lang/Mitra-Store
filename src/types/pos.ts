@@ -5,12 +5,32 @@
 
 export type UserRole = 'admin' | 'supervisor' | 'kasir';
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: 'pemilik' | 'kasir';
+  storeId: string;
+  storeName: string;
+}
+
+export interface StoreAccount {
+  id: string;
+  name: string;
+  ownerId: string;
+  ownerEmail: string;
+  address?: string;
+  phone?: string;
+  createdAt: string;
+}
+
 export interface StaffUser {
   id: string;
   name: string;
   role: UserRole;
   pin: string;
   avatarColor: string;
+  email?: string;
 }
 
 export type ProductCategory = string;
@@ -73,6 +93,8 @@ export interface Transaction {
   channel: SalesChannel;
   notes?: string;
   shopeeOrderId?: string;
+  isOffline?: boolean;
+  syncedAt?: string;
 }
 
 export type CustomerTier = 'reguler' | 'silver' | 'gold' | 'platinum';

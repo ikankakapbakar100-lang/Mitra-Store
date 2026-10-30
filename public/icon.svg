@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#800020" />
+      <stop offset="100%" stop-color="#550015" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Solid / Gradient Background for full-bleed & maskable safe zone -->
+  <rect width="512" height="512" rx="108" fill="url(#bgGrad)" />
+
+  <!-- Inner Content (Inside 80% safe zone: 51px to 461px) -->
+  <g filter="url(#shadow)">
+    <!-- Outer Decorative Plate / Mold Circle -->
+    <circle cx="256" cy="256" r="160" fill="#FFF0F3" opacity="0.15" />
+    <circle cx="256" cy="256" r="144" fill="none" stroke="#FCE4E8" stroke-width="6" stroke-dasharray="16 10" />
+
+    <!-- Central Shopping Bag & Cake Mold Symbol -->
+    <!-- Shopping Bag Body -->
+    <path d="M176 210 L336 210 L320 370 C320 382 310 392 298 392 L214 392 C202 392 192 382 192 370 Z" fill="#FFF0F3" />
+    
+    <!-- Bag Handles -->
+    <path d="M216 210 V166 C216 144 234 126 256 126 C278 126 296 144 296 166 V210" fill="none" stroke="#FFF0F3" stroke-width="18" stroke-linecap="round" />
+
+    <!-- Mitra Store Monogram 'M' with Whisk & Sparkle inside Bag -->
+    <path d="M216 350 L216 260 L256 304 L296 260 L296 350" fill="none" stroke="#800020" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" />
+    
+    <!-- Sparkle Stars -->
+    <path d="M364 160 L370 178 L388 184 L370 190 L364 208 L358 190 L340 184 L358 178 Z" fill="#FCE4E8" />
+    <circle cx="148" cy="184" r="8" fill="#FCE4E8" />
+  </g>
+</svg>

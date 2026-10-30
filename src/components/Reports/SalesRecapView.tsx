@@ -5,7 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { usePOS } from '../../context/POSContext';
-import { Transaction, DailyCashRecord } from '../../types/pos';
+import { Transaction, DailyCashRecord, CashExpense } from '../../types/pos';
 import {
   formatRupiah,
   formatDateTime,
@@ -20,7 +20,6 @@ import {
   ChevronLeft,
   ChevronRight,
   TrendingUp,
-  ShoppingBag,
   Coins,
   FileSpreadsheet,
   Receipt,
@@ -32,13 +31,22 @@ import {
   Sparkles,
   Info,
   ArrowDownRight,
-  CheckCircle2,
-  AlertTriangle,
+  ArrowUpRight,
+  TrendingDown,
+  Plus,
+  Trash2,
+  Filter,
 } from 'lucide-react';
+import { CashExpenseModal } from '../POS/CashExpenseModal';
 
 interface SalesRecapViewProps {
   onOpenShiftModal?: () => void;
 }
+
+// Tipe item jurnal gabungan untuk pembukuan lengkap
+type JournalItem = 
+  | { type: 'sale'; data: Transaction; time: string; timestamp: number }
+  | { type: 'expense'; data: CashExpense; time: string; timestamp: number };
 
 export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
   const {
@@ -50,6 +58,9 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
     storeProfile,
     currentUser,
     expenses,
+    deleteExpense,
+    isExpenseModalOpen,
+    setIsExpenseModalOpen,
   } = usePOS();
 
   // Helper tanggal hari ini
@@ -67,6 +78,9 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
     return d.toISOString().split('T')[0];
   });
   const [endDate, setEndDate] = useState<string>(todayISO);
+
+  // Filter jenis jurnal di rincian pembukuan: 'all' | 'sales' | 'expenses'
+  const [journalFilter, setJournalFilter] = useState<'all' | 'sales' | 'expenses'>('all');
 
   // State Modals
   const [isInitialCashModalOpen, setIsInitialCashModalOpen] = useState(false);
@@ -120,7 +134,7 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
     setEndDate(todayISO);
   };
 
-  // Filter transaksi berdasarkan tanggal / rentang periode
+  // Filter transaksi penjualan berdasarkan tanggal / rentang periode
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {
       const tDay = new Date(t.date).toISOString().split('T')[0];
@@ -141,8 +155,37 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
       } else {
         return eDay >= startDate && eDay <= endDate;
       }
-    });
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [expenses, dateMode, selectedDate, startDate, endDate]);
+
+  // Jurnal Pembukuan Kas Gabungan (Penjualan + Pengeluaran disusun kronologis)
+  const combinedJournal = useMemo(() => {
+    const list: JournalItem[] = [];
+
+    if (journalFilter === 'all' || journalFilter === 'sales') {
+      filteredTransactions.forEach((t) => {
+        list.push({
+          type: 'sale',
+          data: t,
+          time: t.date,
+          timestamp: new Date(t.date).getTime(),
+        });
+      });
+    }
+
+    if (journalFilter === 'all' || journalFilter === 'expenses') {
+      filteredExpenses.forEach((e) => {
+        list.push({
+          type: 'expense',
+          data: e,
+          time: e.date,
+          timestamp: new Date(e.date).getTime(),
+        });
+      });
+    }
+
+    return list.sort((a, b) => b.timestamp - a.timestamp);
+  }, [filteredTransactions, filteredExpenses, journalFilter]);
 
   // Rekaman Daily Cash Record untuk tanggal terpilih
   const currentDailyCashRecord = useMemo(() => {
@@ -175,7 +218,6 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
       if (selectedDate === todayISO && currentShift) return currentShift.initialCash;
       return 0;
     } else {
-      // Pada mode periode: akumulasi saldo awal seluruh hari yang tercatat
       const recordsInRange = dailyCashHistory.filter((r) => {
         const d = new Date(r.date).toISOString().split('T')[0];
         return d >= startDate && d <= endDate;
@@ -226,13 +268,6 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
   }, [activeClosingCash, expectedTotalCash]);
 
   // Highlight Metrik Penjualan (Part 2)
-  const totalItemsSold = useMemo(() => {
-    return filteredTransactions.reduce(
-      (sum, t) => sum + t.items.reduce((iSum, item) => iSum + item.qty, 0),
-      0
-    );
-  }, [filteredTransactions]);
-
   const totalRevenue = useMemo(() => {
     return filteredTransactions.reduce((sum, t) => sum + t.total, 0);
   }, [filteredTransactions]);
@@ -249,6 +284,11 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
     if (totalRevenue <= 0) return 0;
     return ((totalProfit / totalRevenue) * 100).toFixed(1);
   }, [totalRevenue, totalProfit]);
+
+  // Net Profit Toko (Laba Bersih = Laba Kotor Penjualan - Pengeluaran Kas)
+  const netProfit = useMemo(() => {
+    return totalProfit - dayCashExpenses;
+  }, [totalProfit, dayCashExpenses]);
 
   // Buka Modal Saldo Awal
   const handleOpenInitialCashModal = () => {
@@ -326,57 +366,74 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
     setIsClosingCashModalOpen(false);
   };
 
-  // Ekspor Excel Pembukuan Langsung (Itemized + Transaksi Komprehensif)
+  // Ekspor Excel Pembukuan Lengkap (Penjualan + Pengeluaran Kas Toko)
   const handleExportBookkeepingExcel = () => {
     let csvContent = '\uFEFF'; // UTF-8 BOM untuk Microsoft Excel
     const headers = [
-      'No Faktur',
       'Tanggal & Jam',
-      'Kasir',
-      'Pelanggan',
-      'Metode Pembayaran',
-      'Rincian Produk Terjual',
-      'Total Qty (pcs)',
-      'Total Omset (Rp)',
-      'Total HPP Modal (Rp)',
+      'Jenis Jurnal',
+      'No Faktur / Ref',
+      'Rincian / Keterangan',
+      'Pemasukan Omset (Rp)',
+      'Pengeluaran Kas (Rp)',
+      'HPP Modal (Rp)',
       'Laba Kotor (Rp)',
-      'Margin Laba (%)',
-      'Jumlah Diterima (Rp)',
-      'Kembalian (Rp)',
+      'Metode Pembayaran',
+      'Kasir / Pencatat',
       'Catatan',
     ];
 
     csvContent += headers.map((h) => `"${h}"`).join(',') + '\r\n';
 
-    filteredTransactions.forEach((tx) => {
-      const itemsDetail = tx.items
-        .map((i) => `${i.product.name} (x${i.qty} @${i.product.sellPrice})`)
-        .join('; ');
-      const totalQty = tx.items.reduce((sum, i) => sum + i.qty, 0);
-      const profit = tx.profit || 0;
-      const margin = tx.total > 0 ? ((profit / tx.total) * 100).toFixed(1) : '0';
+    // Urutkan seluruh aktivitas pembukuan secara kronologis
+    const allJournalForExport = [
+      ...filteredTransactions.map((tx) => ({
+        timestamp: new Date(tx.date).getTime(),
+        dateStr: formatDateTime(tx.date),
+        type: 'PENJUALAN MASUK (+)',
+        refNo: tx.invoiceNo,
+        desc: tx.items.map((i) => `${i.product.name} (x${i.qty} @${i.product.sellPrice})`).join('; '),
+        income: tx.total,
+        expense: 0,
+        cost: tx.costTotal || 0,
+        profit: tx.profit || 0,
+        method: tx.paymentMethod.toUpperCase(),
+        actor: tx.cashierName,
+        notes: tx.notes || (tx.customerName ? `Pelanggan: ${tx.customerName}` : '-'),
+      })),
+      ...filteredExpenses.map((exp) => ({
+        timestamp: new Date(exp.date).getTime(),
+        dateStr: formatDateTime(exp.date),
+        type: 'PENGELUARAN KAS (-)',
+        refNo: `EXP-${exp.id.slice(-6).toUpperCase()}`,
+        desc: `${exp.categoryLabel}: ${exp.notes}`,
+        income: 0,
+        expense: exp.amount,
+        cost: 0,
+        profit: 0,
+        method: 'KAS TUNAI LACI',
+        actor: exp.cashierName || 'Owner',
+        notes: exp.notes || 'Pengeluaran kas toko',
+      })),
+    ].sort((a, b) => b.timestamp - a.timestamp);
 
-      const row = [
-        tx.invoiceNo,
-        formatDateTime(tx.date),
-        tx.cashierName,
-        tx.customerName || 'Pelanggan Umum',
-        tx.paymentMethod.toUpperCase(),
-        itemsDetail.replace(/"/g, '""'),
-        totalQty,
-        tx.total,
-        tx.costTotal || 0,
-        profit,
-        `${margin}%`,
-        tx.amountPaid,
-        tx.change,
-        (tx.notes || '-').replace(/"/g, '""'),
+    allJournalForExport.forEach((row) => {
+      const csvRow = [
+        row.dateStr,
+        row.type,
+        row.refNo,
+        row.desc.replace(/"/g, '""'),
+        row.income,
+        row.expense,
+        row.cost,
+        row.profit,
+        row.method,
+        row.actor,
+        row.notes.replace(/"/g, '""'),
       ];
-
-      csvContent += row.map((val) => `"${val}"`).join(',') + '\r\n';
+      csvContent += csvRow.map((val) => `"${val}"`).join(',') + '\r\n';
     });
 
-    // Buat Blob dan download otomatis
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -384,7 +441,7 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
     const dateLabel = dateMode === 'harian' ? selectedDate : `${startDate}_sd_${endDate}`;
     link.setAttribute(
       'download',
-      `Pembukuan_Penjualan_${storeProfile.name.replace(/\s+/g, '_')}_${dateLabel}.csv`
+      `Pembukuan_Keuangan_${storeProfile.name.replace(/\s+/g, '_')}_${dateLabel}.csv`
     );
     document.body.appendChild(link);
     link.click();
@@ -550,7 +607,6 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
                 </p>
               </div>
 
-              {/* Ikon Khusus Saldo Awal */}
               <div className="w-10 h-10 rounded-2xl bg-[#FFF0F3] border border-[#F8CCD4] text-[#800020] flex items-center justify-center shrink-0 shadow-2xs">
                 <Wallet className="w-5 h-5" />
               </div>
@@ -612,7 +668,6 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
                 </p>
               </div>
 
-              {/* Ikon Khusus Saldo Akhir */}
               <div className="w-10 h-10 rounded-2xl bg-amber-100/80 border border-amber-200 text-amber-800 flex items-center justify-center shrink-0 shadow-2xs">
                 <Lock className="w-5 h-5" />
               </div>
@@ -651,7 +706,6 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
                 </p>
               </div>
 
-              {/* Ikon Khusus Kas Seluruhnya */}
               <div className="w-10 h-10 rounded-2xl bg-emerald-100/80 border border-emerald-200 text-emerald-800 flex items-center justify-center shrink-0 shadow-2xs">
                 <Banknote className="w-5 h-5" />
               </div>
@@ -677,7 +731,8 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
 
       {/* =========================================================================
           PART 2: TABEL KHUSUS RINGKAS HIGHLIGHT (TIDAK TERLALU BESAR)
-          Jumlah Produk Terjual, Estimasi Laba Kotor, Total Omset
+          Info 'Jumlah Produk Terjual' telah DIHAPUS sesuai permintaan.
+          Menampilkan: Total Omset Penjualan, Total Pengeluaran Kas Toko, dan Estimasi Laba Kotor.
           ========================================================================= */}
       <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-[#FCE4E8] p-3 sm:p-3.5 shadow-2xs">
         <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#FCE4E8]/70">
@@ -691,7 +746,7 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
             </span>
           </div>
           <span className="text-[11px] text-stone-700 font-medium">
-            {filteredTransactions.length} Transaksi Selesai
+            {filteredTransactions.length} Penjualan | {filteredExpenses.length} Pengeluaran Kas
           </span>
         </div>
 
@@ -700,62 +755,60 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-[#FFF5F7] text-stone-800 text-[11px] font-bold">
-                <th className="py-2 px-3 text-left rounded-l-xl">Jumlah Produk Terjual</th>
-                <th className="py-2 px-3 text-left">Estimasi Laba Kotor</th>
-                <th className="py-2 px-3 text-right rounded-r-xl">Total Omset Penjualan</th>
+                <th className="py-2 px-3 text-left rounded-l-xl">Total Omset Penjualan</th>
+                <th className="py-2 px-3 text-left">Total Pengeluaran Kas Toko</th>
+                <th className="py-2 px-3 text-right rounded-r-xl">Estimasi Laba Kotor</th>
               </tr>
             </thead>
             <tbody>
               <tr className="divide-x divide-stone-100">
-                {/* 1. Jumlah Produk Terjual */}
+                {/* 1. Total Omset Penjualan */}
                 <td className="py-2.5 px-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-xl bg-[#FFF0F3] text-[#800020] flex items-center justify-center shrink-0 border border-[#F8CCD4]">
-                      <ShoppingBag className="w-4 h-4" />
+                      <Coins className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="font-extrabold text-sm sm:text-base text-black font-mono">
-                        {totalItemsSold.toLocaleString('id-ID')}{' '}
-                        <span className="text-xs font-normal text-stone-700">pcs</span>
-                      </div>
-                      <div className="text-[10px] text-stone-700">
-                        Total {filteredTransactions.length} nota transaksi
-                      </div>
-                    </div>
-                  </div>
-                </td>
-
-                {/* 2. Estimasi Laba Kotor */}
-                <td className="py-2.5 px-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200">
-                      <TrendingUp className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="font-extrabold text-sm sm:text-base text-emerald-800 font-mono">
-                        {formatRupiah(totalProfit)}
-                      </div>
-                      <div className="text-[10px] text-emerald-800 font-medium">
-                        Margin keuntungan: {marginPercentage}% (Modal: {formatRupiah(totalCost)})
-                      </div>
-                    </div>
-                  </div>
-                </td>
-
-                {/* 3. Total Omset Penjualan */}
-                <td className="py-2.5 px-3 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <div className="text-right">
                       <div className="font-extrabold text-sm sm:text-base text-[#800020] font-mono">
                         {formatRupiah(totalRevenue)}
                       </div>
                       <div className="text-[10px] text-stone-700">
-                        Tunai: {formatRupiah(dayCashSales)} | Digital:{' '}
-                        {formatRupiah(dayDigitalSales)}
+                        Tunai: {formatRupiah(dayCashSales)} | Digital: {formatRupiah(dayDigitalSales)}
                       </div>
                     </div>
-                    <div className="w-8 h-8 rounded-xl bg-[#FFF0F3] text-[#800020] flex items-center justify-center shrink-0 border border-[#F8CCD4]">
-                      <Coins className="w-4 h-4" />
+                  </div>
+                </td>
+
+                {/* 2. Total Pengeluaran Kas Toko */}
+                <td className="py-2.5 px-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center shrink-0 border border-rose-200">
+                      <TrendingDown className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-sm sm:text-base text-rose-900 font-mono">
+                        {formatRupiah(dayCashExpenses)}
+                      </div>
+                      <div className="text-[10px] text-stone-700">
+                        {filteredExpenses.length} transaksi pengeluaran/beban kas
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                {/* 3. Estimasi Laba Kotor */}
+                <td className="py-2.5 px-3 text-right">
+                  <div className="flex items-center justify-end gap-2.5">
+                    <div className="text-right">
+                      <div className="font-extrabold text-sm sm:text-base text-emerald-800 font-mono">
+                        {formatRupiah(totalProfit)}
+                      </div>
+                      <div className="text-[10px] text-emerald-800 font-medium">
+                        Margin: {marginPercentage}% (Laba Bersih: {formatRupiah(netProfit)})
+                      </div>
+                    </div>
+                    <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200">
+                      <TrendingUp className="w-4 h-4" />
                     </div>
                   </div>
                 </td>
@@ -766,50 +819,101 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
       </div>
 
       {/* =========================================================================
-          PART 3: KOLOM KHUSUS RINCIAN TRANSAKSI (FOKUS PEMBUKUAN)
-          Search bar no faktur DIHAPUS. Akses langsung ekspor ke Excel disediakan.
+          PART 3: KOLOM KHUSUS RINCIAN TRANSAKSI & PEMBUKUAN
+          Mencatat Transaksi Penjualan Masuk (+) DAN Pengeluaran Kas Toko (-)
+          Search bar no faktur telah ditiadakan. Akses langsung ekspor ke Excel.
           ========================================================================= */}
       <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-[#FCE4E8] shadow-2xs overflow-hidden">
-        {/* Header Rincian Transaksi & Tombol Ekspor Excel */}
+        {/* Header Rincian Transaksi & Tombol Aksi */}
         <div className="p-3.5 sm:p-4 border-b border-[#FCE4E8] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#FFF5F7]/40">
           <div>
             <h3 className="text-sm sm:text-base font-black text-black flex items-center gap-2">
               <Receipt className="w-4 h-4 text-[#800020]" />
-              <span>Rincian Transaksi &amp; Pembukuan</span>
+              <span>Rincian Transaksi &amp; Pembukuan Kas</span>
             </h3>
             <p className="text-xs text-stone-700 mt-0.5">
-              Jurnal pembukuan detail per transaksi untuk pencatatan keuangan toko.
+              Jurnal pembukuan kas masuk (penjualan) dan kas keluar (pengeluaran toko) harian.
             </p>
           </div>
 
-          {/* Tombol Ekspor Langsung ke Excel */}
-          <button
-            type="button"
-            onClick={handleExportBookkeepingExcel}
-            disabled={filteredTransactions.length === 0}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer shadow-2xs shrink-0 ${
-              filteredTransactions.length === 0
-                ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
-                : 'bg-emerald-700 hover:bg-emerald-800 text-white shadow-emerald-700/20'
-            }`}
-            title="Download jurnal rincian transaksi langsung ke file Excel (.csv)"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Ekspor Excel Pembukuan</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+            {/* Filter Jenis Jurnal */}
+            <div className="flex items-center p-0.5 bg-white rounded-xl border border-[#F8CCD4] text-xs shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setJournalFilter('all')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  journalFilter === 'all'
+                    ? 'bg-[#800020] text-white shadow-2xs'
+                    : 'text-stone-700 hover:text-black'
+                }`}
+              >
+                Semua ({filteredTransactions.length + filteredExpenses.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setJournalFilter('sales')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  journalFilter === 'sales'
+                    ? 'bg-emerald-700 text-white shadow-2xs'
+                    : 'text-emerald-800 hover:text-black'
+                }`}
+              >
+                Penjualan (+{filteredTransactions.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setJournalFilter('expenses')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  journalFilter === 'expenses'
+                    ? 'bg-rose-700 text-white shadow-2xs'
+                    : 'text-rose-800 hover:text-black'
+                }`}
+              >
+                Pengeluaran (-{filteredExpenses.length})
+              </button>
+            </div>
+
+            {/* Tombol Catat Pengeluaran Kas Baru */}
+            <button
+              type="button"
+              onClick={() => setIsExpenseModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white border border-rose-300 text-rose-800 hover:bg-rose-50 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs shrink-0"
+              title="Catat pengeluaran kas atau biaya operasional toko"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Catat Pengeluaran</span>
+            </button>
+
+            {/* Tombol Ekspor Langsung ke Excel */}
+            <button
+              type="button"
+              onClick={handleExportBookkeepingExcel}
+              disabled={combinedJournal.length === 0}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer shadow-2xs shrink-0 ${
+                combinedJournal.length === 0
+                  ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                  : 'bg-emerald-700 hover:bg-emerald-800 text-white shadow-emerald-700/20'
+              }`}
+              title="Download pembukuan penjualan dan pengeluaran ke file Excel (.csv)"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Ekspor Excel Pembukuan</span>
+            </button>
+          </div>
         </div>
 
-        {/* Tabel Pembukuan Rincian Transaksi */}
-        {filteredTransactions.length === 0 ? (
+        {/* Tabel Pembukuan Jurnal Transaksi & Pengeluaran */}
+        {combinedJournal.length === 0 ? (
           <div className="p-10 text-center space-y-2">
             <div className="w-12 h-12 rounded-2xl bg-[#FFF0F3] text-[#800020] flex items-center justify-center mx-auto border border-[#F8CCD4]">
               <Receipt className="w-6 h-6" />
             </div>
             <h4 className="font-extrabold text-sm text-black">
-              Belum ada transaksi pada {dateMode === 'harian' ? 'hari ini' : 'periode ini'}
+              Belum ada catatan pada {dateMode === 'harian' ? 'hari ini' : 'periode ini'}
             </h4>
             <p className="text-xs text-stone-700 max-w-sm mx-auto">
-              Setiap transaksi yang berhasil dicatat di kasir POS akan otomatis tercatat di jurnal pembukuan ini.
+              Setiap transaksi penjualan kasir POS dan pengeluaran kas toko akan otomatis tercatat rapi di jurnal pembukuan ini.
             </p>
           </div>
         ) : (
@@ -818,114 +922,222 @@ export const SalesRecapView: React.FC<SalesRecapViewProps> = () => {
               <thead>
                 <tr className="bg-stone-50/90 text-stone-700 text-[11px] font-bold border-b border-[#FCE4E8]">
                   <th className="py-2.5 px-3 text-left">Waktu</th>
-                  <th className="py-2.5 px-3 text-left">No. Faktur</th>
-                  <th className="py-2.5 px-3 text-left">Rincian Produk &amp; Qty</th>
-                  <th className="py-2.5 px-3 text-right">Total Omset</th>
-                  <th className="py-2.5 px-3 text-right">HPP Modal</th>
+                  <th className="py-2.5 px-3 text-center">Jenis</th>
+                  <th className="py-2.5 px-3 text-left">No. Faktur / Ref</th>
+                  <th className="py-2.5 px-3 text-left">Keterangan / Rincian</th>
+                  <th className="py-2.5 px-3 text-right">Pemasukan (Rp)</th>
+                  <th className="py-2.5 px-3 text-right">Pengeluaran (Rp)</th>
                   <th className="py-2.5 px-3 text-right">Laba Kotor</th>
                   <th className="py-2.5 px-3 text-center">Metode</th>
-                  <th className="py-2.5 px-3 text-left">Kasir</th>
-                  <th className="py-2.5 px-3 text-center">Struk</th>
+                  <th className="py-2.5 px-3 text-left">Kasir / Pencatat</th>
+                  <th className="py-2.5 px-3 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                {filteredTransactions.map((tx) => {
-                  const txProfit = tx.profit || 0;
-                  const totalQty = tx.items.reduce((s, i) => s + i.qty, 0);
+                {combinedJournal.map((item, index) => {
+                  if (item.type === 'sale') {
+                    const tx = item.data;
+                    const txProfit = tx.profit || 0;
+                    const totalQty = tx.items.reduce((s, i) => s + i.qty, 0);
 
-                  return (
-                    <tr
-                      key={tx.id}
-                      className="hover:bg-[#FFF5F7]/50 transition-colors group"
-                    >
-                      {/* Waktu */}
-                      <td className="py-2.5 px-3 font-mono text-[11px] text-stone-700 whitespace-nowrap">
-                        {dateMode === 'periode'
-                          ? formatDateTime(tx.date)
-                          : formatTimeOnly(tx.date)}
-                      </td>
+                    return (
+                      <tr
+                        key={`tx-${tx.id}-${index}`}
+                        className="hover:bg-[#FFF5F7]/50 transition-colors group"
+                      >
+                        {/* Waktu */}
+                        <td className="py-2.5 px-3 font-mono text-[11px] text-stone-700 whitespace-nowrap">
+                          {dateMode === 'periode'
+                            ? formatDateTime(tx.date)
+                            : formatTimeOnly(tx.date)}
+                        </td>
 
-                      {/* No Faktur */}
-                      <td className="py-2.5 px-3 font-mono font-bold text-black whitespace-nowrap">
-                        {tx.invoiceNo}
-                      </td>
+                        {/* Jenis */}
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800">
+                            <ArrowUpRight className="w-3 h-3 text-emerald-700" />
+                            <span>Penjualan</span>
+                          </span>
+                        </td>
 
-                      {/* Rincian Produk & Qty */}
-                      <td className="py-2.5 px-3 max-w-xs">
-                        <div className="space-y-0.5">
-                          {tx.items.slice(0, 3).map((item, idx) => (
-                            <div
-                              key={idx}
-                              className="text-[11px] text-stone-800 flex items-center justify-between gap-2"
-                            >
-                              <span className="truncate">{item.product.name}</span>
-                              <span className="font-mono font-bold text-black shrink-0">
-                                x{item.qty}
-                              </span>
-                            </div>
-                          ))}
-                          {tx.items.length > 3 && (
-                            <div className="text-[10px] text-stone-700 italic">
-                              +{tx.items.length - 3} produk lainnya ({totalQty} pcs)
-                            </div>
-                          )}
-                        </div>
-                      </td>
+                        {/* No Faktur */}
+                        <td className="py-2.5 px-3 font-mono font-bold text-black whitespace-nowrap">
+                          {tx.invoiceNo}
+                        </td>
 
-                      {/* Total Omset */}
-                      <td className="py-2.5 px-3 text-right font-mono font-bold text-[#800020] whitespace-nowrap">
-                        {formatRupiah(tx.total)}
-                      </td>
+                        {/* Rincian Produk & Qty */}
+                        <td className="py-2.5 px-3 max-w-xs">
+                          <div className="space-y-0.5">
+                            {tx.items.slice(0, 3).map((it, idx) => (
+                              <div
+                                key={idx}
+                                className="text-[11px] text-stone-800 flex items-center justify-between gap-2"
+                              >
+                                <span className="truncate">{it.product.name}</span>
+                                <span className="font-mono font-bold text-black shrink-0">
+                                  x{it.qty}
+                                </span>
+                              </div>
+                            ))}
+                            {tx.items.length > 3 && (
+                              <div className="text-[10px] text-stone-700 italic">
+                                +{tx.items.length - 3} produk lainnya ({totalQty} pcs)
+                              </div>
+                            )}
+                          </div>
+                        </td>
 
-                      {/* HPP Modal */}
-                      <td className="py-2.5 px-3 text-right font-mono text-stone-700 whitespace-nowrap">
-                        {formatRupiah(tx.costTotal || 0)}
-                      </td>
+                        {/* Pemasukan (Omset) */}
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-[#800020] whitespace-nowrap">
+                          +{formatRupiah(tx.total)}
+                        </td>
 
-                      {/* Laba Kotor */}
-                      <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-800 whitespace-nowrap">
-                        {formatRupiah(txProfit)}
-                      </td>
+                        {/* Pengeluaran */}
+                        <td className="py-2.5 px-3 text-right font-mono text-stone-400 whitespace-nowrap">
+                          -
+                        </td>
 
-                      {/* Metode Bayar */}
-                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
-                        <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                            tx.paymentMethod === 'tunai'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : tx.paymentMethod === 'qris'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-purple-100 text-purple-800'
-                          }`}
-                        >
-                          {tx.paymentMethod}
-                        </span>
-                      </td>
+                        {/* Laba Kotor */}
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-800 whitespace-nowrap">
+                          +{formatRupiah(txProfit)}
+                        </td>
 
-                      {/* Kasir */}
-                      <td className="py-2.5 px-3 text-stone-700 whitespace-nowrap">
-                        {tx.cashierName}
-                      </td>
+                        {/* Metode Bayar */}
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                          <span
+                            className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                              tx.paymentMethod === 'tunai'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : tx.paymentMethod === 'qris'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-purple-100 text-purple-800'
+                            }`}
+                          >
+                            {tx.paymentMethod}
+                          </span>
+                        </td>
 
-                      {/* Tombol Lihat Struk */}
-                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedReceiptTx(tx)}
-                          className="p-1 rounded-lg text-stone-700 hover:text-[#800020] hover:bg-[#FFF0F3] transition-colors cursor-pointer"
-                          title="Lihat Detail Struk"
-                        >
-                          <Receipt className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
+                        {/* Kasir */}
+                        <td className="py-2.5 px-3 text-stone-700 whitespace-nowrap">
+                          {tx.cashierName}
+                        </td>
+
+                        {/* Tombol Lihat Struk */}
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedReceiptTx(tx)}
+                            className="p-1 rounded-lg text-stone-700 hover:text-[#800020] hover:bg-[#FFF0F3] transition-colors cursor-pointer"
+                            title="Lihat Detail Struk"
+                          >
+                            <Receipt className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  } else {
+                    const exp = item.data;
+
+                    return (
+                      <tr
+                        key={`exp-${exp.id}-${index}`}
+                        className="hover:bg-rose-50/40 bg-rose-50/15 transition-colors group"
+                      >
+                        {/* Waktu */}
+                        <td className="py-2.5 px-3 font-mono text-[11px] text-stone-700 whitespace-nowrap">
+                          {dateMode === 'periode'
+                            ? formatDateTime(exp.date)
+                            : formatTimeOnly(exp.date)}
+                        </td>
+
+                        {/* Jenis */}
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-100 text-rose-800">
+                            <ArrowDownRight className="w-3 h-3 text-rose-700" />
+                            <span>Pengeluaran</span>
+                          </span>
+                        </td>
+
+                        {/* No Faktur / Ref */}
+                        <td className="py-2.5 px-3 font-mono font-bold text-rose-900 whitespace-nowrap">
+                          EXP-{exp.id.slice(-6).toUpperCase()}
+                        </td>
+
+                        {/* Keterangan / Rincian Pengeluaran */}
+                        <td className="py-2.5 px-3 max-w-xs">
+                          <div>
+                            <span className="font-bold text-black text-[11px]">
+                              {exp.categoryLabel}
+                            </span>
+                            {exp.notes && (
+                              <p className="text-[10px] text-stone-700 line-clamp-1 mt-0.5">
+                                {exp.notes}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Pemasukan */}
+                        <td className="py-2.5 px-3 text-right font-mono text-stone-400 whitespace-nowrap">
+                          -
+                        </td>
+
+                        {/* Pengeluaran (Nominal) */}
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-rose-800 whitespace-nowrap">
+                          -{formatRupiah(exp.amount)}
+                        </td>
+
+                        {/* Laba Kotor */}
+                        <td className="py-2.5 px-3 text-right font-mono text-stone-400 whitespace-nowrap">
+                          -
+                        </td>
+
+                        {/* Metode */}
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-stone-100 text-stone-800 uppercase">
+                            Kas Laci
+                          </span>
+                        </td>
+
+                        {/* Kasir / Pencatat */}
+                        <td className="py-2.5 px-3 text-stone-700 whitespace-nowrap">
+                          {exp.cashierName || 'Owner'}
+                        </td>
+
+                        {/* Tombol Hapus Pengeluaran */}
+                        <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Hapus catatan pengeluaran "${exp.categoryLabel}" sebesar ${formatRupiah(exp.amount)}?`)) {
+                                deleteExpense(exp.id);
+                              }
+                            }}
+                            className="p-1 rounded-lg text-stone-400 hover:text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
+                            title="Hapus Catatan Pengeluaran"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  }
                 })}
               </tbody>
             </table>
           </div>
         )}
       </div>
+
+      {/* =========================================================================
+          MODAL CATAT PENGELUARAN KAS
+          ========================================================================= */}
+      {isExpenseModalOpen && (
+        <CashExpenseModal
+          isOpen={isExpenseModalOpen}
+          onClose={() => setIsExpenseModalOpen(false)}
+        />
+      )}
 
       {/* =========================================================================
           MODAL 1: INPUT / EDIT SALDO KAS AWAL

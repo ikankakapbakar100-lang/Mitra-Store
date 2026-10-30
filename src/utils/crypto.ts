@@ -141,3 +141,26 @@ export async function decryptData<T = unknown>(payload: EncryptedPayload, passph
     throw new Error('Gagal mendekripsi data. Password salah atau file backup rusak: ' + (err instanceof Error ? err.message : String(err)));
   }
 }
+
+// Password hashing helper for staff PINs (SHA-256 + Salt)
+export async function hashPasswordClient(plainText: string, customSalt?: string): Promise<string> {
+  const salt = customSalt || Array.from(window.crypto.getRandomValues(new Uint8Array(8)))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+  const hash = await computeSha256(plainText + salt);
+  return `sha256:${salt}:${hash}`;
+}
+
+export async function verifyPasswordClient(plainText: string, storedHashOrPin: string): Promise<boolean> {
+  if (!storedHashOrPin) return false;
+  if (storedHashOrPin.startsWith('sha256:')) {
+    const parts = storedHashOrPin.split(':');
+    if (parts.length !== 3) return false;
+    const salt = parts[1];
+    const expectedHash = parts[2];
+    const computedHash = await computeSha256(plainText + salt);
+    return computedHash === expectedHash;
+  }
+  // Backward compatibility with unhashed legacy pins
+  return storedHashOrPin.trim() === plainText.trim();
+}
+

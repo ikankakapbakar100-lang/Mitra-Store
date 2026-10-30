@@ -39,7 +39,14 @@ import { getInitialTransactions } from '../data/initialTransactions';
 import { getInitialDailyCashRecords } from '../data/initialDailyCash';
 import { getInitialExpenses } from '../data/initialExpenses';
 import { generateInvoiceNo, generateShopeeOrderNo } from '../utils/format';
-import { computeSha256, encryptData, decryptData, EncryptedPayload } from '../utils/crypto';
+import { 
+  computeSha256, 
+  encryptData, 
+  decryptData, 
+  EncryptedPayload,
+  hashPasswordClient,
+  verifyPasswordClient,
+} from '../utils/crypto';
 import { bluetoothPrinter, BluetoothDeviceStatus } from '../utils/bluetooth';
 import confetti from 'canvas-confetti';
 import {
@@ -55,6 +62,23 @@ import {
   exportProductsToCSV,
   exportFullDatabaseJSON,
 } from '../utils/dataExportImport';
+import {
+  supabase,
+  checkSupabaseStatus,
+  SupabaseHealthStatus,
+  mapProductToDb,
+  mapProductFromDb,
+  mapTransactionToDb,
+  mapTransactionFromDb,
+  mapCustomerToDb,
+  mapCustomerFromDb,
+  mapDailyCashRecordToDb,
+  mapDailyCashRecordFromDb,
+  mapExpenseToDb,
+  mapExpenseFromDb,
+  mapStoreProfileToDb,
+  mapStoreProfileFromDb,
+} from '../lib/supabase';
 
 interface POSContextType {
   // Products & Inventory
@@ -122,9 +146,13 @@ interface POSContextType {
   updateStaffUser: (id: string, updates: Partial<StaffUser>) => void;
   currentUser: StaffUser;
   isCashierLoggedIn: boolean;
-  loginCashier: (userId: string, pinOrPassword: string) => boolean;
+  loginCashier: (userId: string, pinOrPassword: string) => Promise<boolean>;
   logoutCashier: () => void;
-  switchUser: (userId: string, pinOrPassword: string) => boolean;
+  switchUser: (userId: string, pinOrPassword: string) => Promise<boolean>;
+  adminSessionToken: string | null;
+  resetStaffPasswordByAdmin: (targetUserId: string, newPassword: string, newName?: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  isStaffModalOpen: boolean;
+  setIsStaffModalOpen: (open: boolean) => void;
   currentShift: CashierShift | null;
   openShift: (initialCash: number) => void;
   closeShift: (actualCash: number, notes?: string) => void;
@@ -193,6 +221,22 @@ interface POSContextType {
   testVoiceAlert: (type: 'low_stock' | 'out_of_stock') => void;
   isVoiceSettingsModalOpen: boolean;
   setIsVoiceSettingsModalOpen: (open: boolean) => void;
+
+  // Offline & Service Worker Storage Strategy
+  isOnline: boolean;
+  offlineQueue: Transaction[];
+  isSyncingOffline: boolean;
+  syncOfflineTransactions: () => Promise<{ success: boolean; syncedCount: number; message?: string }>;
+  isOfflineModalOpen: boolean;
+  setIsOfflineModalOpen: (open: boolean) => void;
+
+  // Supabase Cloud Database Integration
+  supabaseStatus: SupabaseHealthStatus;
+  isSupabaseModalOpen: boolean;
+  setIsSupabaseModalOpen: (open: boolean) => void;
+  checkSupabaseConnection: () => Promise<void>;
+  seedDataToSupabase: () => Promise<{ success: boolean; message?: string }>;
+  isSupabaseSyncing: boolean;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
@@ -214,6 +258,7 @@ const STORAGE_KEYS = {
   ACTIVE_CART_ID: 'kasir_shopee_active_cart_id_v3',
   EXPENSES: 'kasir_shopee_expenses_v2',
   VOICE_SETTINGS: 'mitrastore_voice_settings_v1',
+  OFFLINE_QUEUE: 'mitrastore_offline_transactions_queue_v1',
 };
 
 export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -244,6 +289,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(updated));
       return updated;
     });
+    if (supabaseStatus?.hasSchema && isOnline) {
+      supabase.from('categories').upsert({ id: 'cat-' + Date.now(), name: trimmed }, { onConflict: 'name' }).then();
+    }
     addNotification('Kategori Baru Ditambahkan', `Kategori "${trimmed}" berhasil dibuat.`, 'system');
   };
 
@@ -257,6 +305,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(updated));
       return updated;
     });
+
+    if (supabaseStatus?.hasSchema && isOnline) {
+      supabase.from('categories').delete().eq('name', name).then();
+    }
 
     // Reassign products to an active existing category
     setProducts(prev =>
@@ -289,6 +341,34 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return getInitialTransactions();
     }
   });
+
+  // Online / Offline State & Local Storage Queue (IndexedDB + LocalStorage)
+  const [isOnline, setIsOnline] = useState<boolean>(() => {
+    return typeof navigator !== 'undefined' ? navigator.onLine : true;
+  });
+
+  const [offlineQueue, setOfflineQueue] = useState<Transaction[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.OFFLINE_QUEUE);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [isSyncingOffline, setIsSyncingOffline] = useState<boolean>(false);
+  const [isOfflineModalOpen, setIsOfflineModalOpen] = useState<boolean>(false);
+
+  // Supabase Cloud Database Integration States
+  const [supabaseStatus, setSupabaseStatus] = useState<SupabaseHealthStatus>({
+    isConnected: true,
+    hasSchema: false,
+    missingTables: [],
+    latencyMs: 0,
+    url: 'https://tgcezwlxcjnsgrwedokq.supabase.co',
+  });
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState<boolean>(false);
+  const [isSupabaseSyncing, setIsSupabaseSyncing] = useState<boolean>(false);
 
   // Customers
   const [customers, setCustomers] = useState<Customer[]>(() => {
@@ -369,6 +449,16 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return localStorage.getItem(STORAGE_KEYS.CURRENT_USER_ID) || 'user-kasir-1';
   });
   const currentUser = staffList.find(u => u.id === currentUserId) || staffList[0];
+
+  const [adminSessionToken, setAdminSessionToken] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem('mitrastore_admin_session_token');
+    } catch {
+      return null;
+    }
+  });
+
+  const [isStaffModalOpen, setIsStaffModalOpen] = useState<boolean>(false);
 
   // Cashier Shift
   const [currentShift, setCurrentShift] = useState<CashierShift | null>(() => {
@@ -766,6 +856,227 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications(prev => [newNotif, ...prev]);
   }, []);
 
+  // Dual-Layer Storage Persistence for Offline Queue (IndexedDB + LocalStorage)
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.OFFLINE_QUEUE, JSON.stringify(offlineQueue));
+    } catch {}
+    saveToIndexedDB('offlineQueue', offlineQueue);
+  }, [offlineQueue]);
+
+  // Synchronize Offline Transactions to Backend Server
+  const syncOfflineTransactions = useCallback(async (): Promise<{
+    success: boolean;
+    syncedCount: number;
+    message?: string;
+  }> => {
+    if (offlineQueue.length === 0) {
+      return { success: true, syncedCount: 0, message: 'Tidak ada transaksi offline yang menunggu sinkronisasi.' };
+    }
+
+    setIsSyncingOffline(true);
+    try {
+      const res = await fetch('/api/transactions/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactions: offlineQueue }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Gagal menghubungi server sinkronisasi.');
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        const syncedCount = data.syncedCount || offlineQueue.length;
+        // Mark these transactions in history as synced
+        setTransactions(prev =>
+          prev.map(t => {
+            if (offlineQueue.some(off => off.invoiceNo === t.invoiceNo)) {
+              return { ...t, isOffline: false, syncedAt: new Date().toISOString() };
+            }
+            return t;
+          })
+        );
+        // Clear queue
+        setOfflineQueue([]);
+        localStorage.removeItem(STORAGE_KEYS.OFFLINE_QUEUE);
+        saveToIndexedDB('offlineQueue', []);
+
+        addNotification(
+          'Sinkronisasi Berhasil',
+          `${syncedCount} transaksi offline berhasil disinkronkan ke server pusat.`,
+          'system'
+        );
+        return { success: true, syncedCount, message: data.message };
+      } else {
+        throw new Error(data.error || 'Server menolak sinkronisasi.');
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Koneksi ke server gagal.';
+      return { success: false, syncedCount: 0, message: msg };
+    } finally {
+      setIsSyncingOffline(false);
+    }
+  }, [offlineQueue, addNotification]);
+
+  // Online / Offline Listeners
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      addNotification('Koneksi Internet Pulih', 'Aplikasi kembali online. Memeriksa antrean sinkronisasi...', 'system');
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      addNotification(
+        'Mode Offline Aktif',
+        'Koneksi internet terputus. Kasir POS tetap dapat bertransaksi (data disimpan aman di perangkat).',
+        'system'
+      );
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [addNotification]);
+
+  // Auto-sync queued transactions when coming back online
+  useEffect(() => {
+    if (isOnline && offlineQueue.length > 0 && !isSyncingOffline) {
+      syncOfflineTransactions();
+    }
+  }, [isOnline, offlineQueue.length, isSyncingOffline, syncOfflineTransactions]);
+
+  // ---------------------------------------------------------------------------
+  // SUPABASE CLOUD DATABASE INTEGRATION
+  // ---------------------------------------------------------------------------
+  const checkSupabaseConnection = useCallback(async () => {
+    setIsSupabaseSyncing(true);
+    try {
+      const status = await checkSupabaseStatus();
+      setSupabaseStatus(status);
+      if (status.isConnected && status.hasSchema) {
+        // Load latest products from Supabase
+        const { data: dbProducts } = await supabase.from('products').select('*');
+        if (dbProducts && dbProducts.length > 0) {
+          setProducts(dbProducts.map(mapProductFromDb));
+        }
+
+        // Load latest transactions from Supabase
+        const { data: dbTrx } = await supabase.from('transactions').select('*').order('date', { ascending: false });
+        if (dbTrx && dbTrx.length > 0) {
+          setTransactions(dbTrx.map(mapTransactionFromDb));
+        }
+
+        // Load latest customers from Supabase
+        const { data: dbCust } = await supabase.from('customers').select('*');
+        if (dbCust && dbCust.length > 0) {
+          setCustomers(dbCust.map(mapCustomerFromDb));
+        }
+
+        // Load latest categories from Supabase
+        const { data: dbCats } = await supabase.from('categories').select('name');
+        if (dbCats && dbCats.length > 0) {
+          setCategories(dbCats.map((c: any) => c.name));
+        }
+
+        // Load latest store profile from Supabase
+        const { data: dbStore } = await supabase.from('store_profile').select('*').single();
+        if (dbStore) {
+          setStoreProfile(mapStoreProfileFromDb(dbStore));
+        }
+      }
+    } catch (e) {
+      console.warn('[Supabase] check connection failed:', e);
+    } finally {
+      setIsSupabaseSyncing(false);
+    }
+  }, []);
+
+  // Initial Supabase Check on app mount
+  useEffect(() => {
+    checkSupabaseConnection();
+  }, [checkSupabaseConnection]);
+
+  // Supabase Realtime Subscription: multi-cashier sync
+  useEffect(() => {
+    if (!supabaseStatus.hasSchema) return;
+
+    const channel = supabase
+      .channel('pos-realtime-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const newProd = mapProductFromDb(payload.new);
+          setProducts((prev) => [newProd, ...prev.filter((p) => p.id !== newProd.id)]);
+        } else if (payload.eventType === 'UPDATE') {
+          const updatedProd = mapProductFromDb(payload.new);
+          setProducts((prev) => prev.map((p) => (p.id === updatedProd.id ? updatedProd : p)));
+        } else if (payload.eventType === 'DELETE') {
+          setProducts((prev) => prev.filter((p) => p.id !== (payload.old as any).id));
+        }
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions' }, (payload) => {
+        const newTrx = mapTransactionFromDb(payload.new);
+        setTransactions((prev) => {
+          if (prev.some((t) => t.id === newTrx.id || t.invoiceNo === newTrx.invoiceNo)) return prev;
+          return [newTrx, ...prev];
+        });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, (payload) => {
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          const cust = mapCustomerFromDb(payload.new);
+          setCustomers((prev) => {
+            const exists = prev.some((c) => c.id === cust.id);
+            if (exists) return prev.map((c) => (c.id === cust.id ? cust : c));
+            return [cust, ...prev];
+          });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabaseStatus.hasSchema]);
+
+  // Seed Data to Supabase
+  const seedDataToSupabase = useCallback(async (): Promise<{ success: boolean; message?: string }> => {
+    setIsSupabaseSyncing(true);
+    try {
+      const res = await fetch('/api/supabase/seed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          products,
+          customers,
+          categories,
+          storeProfile,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await checkSupabaseConnection();
+        addNotification(
+          'Supabase Berhasil Disinkronkan',
+          'Data produk, pelanggan, dan profil toko telah tersimpan ke database cloud Supabase.',
+          'system'
+        );
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, message: data.error || 'Gagal mengunggah data.' };
+      }
+    } catch (err: unknown) {
+      return { success: false, message: err instanceof Error ? err.message : 'Koneksi gagal.' };
+    } finally {
+      setIsSupabaseSyncing(false);
+    }
+  }, [products, customers, categories, storeProfile, checkSupabaseConnection, addNotification]);
+
   // Multi-Customer Session Actions
   const createNewCartSession = useCallback((customName?: string): string => {
     const newId = 'cart-' + Date.now();
@@ -965,6 +1276,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const costTotal = cart.reduce((sum, item) => sum + (item.product.buyPrice * item.qty), 0);
     const profit = cartTotal - costTotal;
 
+    const isCurrentlyOffline = !navigator.onLine || !isOnline;
+
     const newTransaction: Transaction = {
       id: 'trx-' + Date.now(),
       invoiceNo: generateInvoiceNo(),
@@ -986,6 +1299,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       cashierName: currentUser.name,
       channel: 'offline',
       notes: notes,
+      isOffline: isCurrentlyOffline,
+      syncedAt: isCurrentlyOffline ? undefined : new Date().toISOString(),
     };
 
     // 1. Decrement products stock & check low stock
@@ -1008,8 +1323,26 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setProducts(updatedProducts);
 
-    // 2. Add Transaction to history
+    // 2. Add Transaction to history & Offline Queue if without internet
     setTransactions(prev => [newTransaction, ...prev]);
+
+    // Push directly to Supabase if schema is ready & online
+    if (supabaseStatus.hasSchema && !isCurrentlyOffline) {
+      supabase.from('transactions').upsert(mapTransactionToDb(newTransaction)).then();
+      cart.forEach((item) => {
+        const remaining = Math.max(0, item.product.stock - item.qty);
+        supabase.from('products').update({ stock: remaining, updated_at: new Date().toISOString() }).eq('id', item.product.id).then();
+      });
+    }
+
+    if (isCurrentlyOffline) {
+      setOfflineQueue(prev => [newTransaction, ...prev]);
+      addNotification(
+        'Transaksi Tersimpan Offline',
+        `Invoice ${newTransaction.invoiceNo} tersimpan aman di perangkat lokal (Mode Offline). Akan disinkronkan otomatis saat online.`,
+        'system'
+      );
+    }
 
     // 3. Update customer loyalty points and spending
     if (selectedCustomer) {
@@ -1128,16 +1461,29 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const id = 'prod-' + Date.now();
     const product: Product = { ...newP, id };
     setProducts(prev => [product, ...prev]);
+    if (supabaseStatus.hasSchema && isOnline) {
+      supabase.from('products').upsert(mapProductToDb(product)).then();
+    }
     addNotification('Produk Baru Ditambahkan', `Produk "${product.name}" berhasil didaftarkan ke inventaris.`, 'system');
   };
 
   const updateProduct = (id: string, updates: Partial<Product>) => {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+    setProducts(prev => {
+      const updated = prev.map(p => p.id === id ? { ...p, ...updates } : p);
+      const target = updated.find(p => p.id === id);
+      if (target && supabaseStatus.hasSchema && isOnline) {
+        supabase.from('products').upsert(mapProductToDb(target)).then();
+      }
+      return updated;
+    });
   };
 
   const deleteProduct = (id: string) => {
     const target = products.find(p => p.id === id);
     setProducts(prev => prev.filter(p => p.id !== id));
+    if (supabaseStatus.hasSchema && isOnline) {
+      supabase.from('products').delete().eq('id', id).then();
+    }
     setCartSessions(prev =>
       prev.map(s => ({ ...s, items: s.items.filter(item => item.product.id !== id) }))
     );
@@ -1149,7 +1495,15 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map(p => {
         if (p.id === productId) {
           const newStock = Math.max(0, p.stock + quantityDelta);
-          return { ...p, stock: newStock };
+          const updated = { ...p, stock: newStock };
+          if (supabaseStatus.hasSchema && isOnline) {
+            supabase
+              .from('products')
+              .update({ stock: newStock, updated_at: new Date().toISOString() })
+              .eq('id', productId)
+              .then();
+          }
+          return updated;
         }
         return p;
       })
@@ -1188,51 +1542,187 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       registeredAt: new Date().toISOString(),
     };
     setCustomers(prev => [newCust, ...prev]);
+    if (supabaseStatus.hasSchema && isOnline) {
+      supabase.from('customers').upsert(mapCustomerToDb(newCust)).then();
+    }
     addNotification('Pelanggan Baru Terdaftar', `${newCust.name} (${newCust.phone}) terdaftar dengan bonus 50 poin.`, 'system');
   };
 
   const updateCustomer = (id: string, updates: Partial<Customer>) => {
-    setCustomers(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+    setCustomers(prev => {
+      const updated = prev.map(c => c.id === id ? { ...c, ...updates } : c);
+      const target = updated.find(c => c.id === id);
+      if (target && supabaseStatus.hasSchema && isOnline) {
+        supabase.from('customers').upsert(mapCustomerToDb(target)).then();
+      }
+      return updated;
+    });
   };
 
-  // Multi-user login & responsibility
-  const loginCashier = (userId: string, pinOrPassword: string): boolean => {
+  // Multi-user login & responsibility with backend verification & SHA-256
+  const loginCashier = async (userId: string, pinOrPassword: string): Promise<boolean> => {
     const user = staffList.find(u => u.id === userId);
     if (!user) return false;
     const cleanInput = pinOrPassword.trim();
-    if (user.pin.trim() !== cleanInput && user.pin.trim().toLowerCase() !== cleanInput.toLowerCase()) {
-      return false;
+
+    try {
+      // 1. Backend server authentication
+      const res = await fetch('/api/staff/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, password: cleanInput }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setCurrentUserId(user.id);
+          localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, user.id);
+          setIsCashierLoggedIn(true);
+          localStorage.setItem(STORAGE_KEYS.CASHIER_LOGGED, 'true');
+
+          if (data.adminToken) {
+            setAdminSessionToken(data.adminToken);
+            sessionStorage.setItem('mitrastore_admin_session_token', data.adminToken);
+          } else {
+            setAdminSessionToken(null);
+            sessionStorage.removeItem('mitrastore_admin_session_token');
+          }
+
+          addNotification(
+            'Login Kasir Berhasil',
+            `Pegawai ${user.name} (${user.role === 'admin' ? 'BOS / OWNER' : user.role.toUpperCase()}) bertanggung jawab pada shift ini.`,
+            'system'
+          );
+          return true;
+        }
+      }
+    } catch {
+      // Server offline fallback
+    }
+
+    // 2. Client-side cryptographic verification fallback
+    const isClientValid = await verifyPasswordClient(cleanInput, user.pin);
+    if (!isClientValid) return false;
+
+    // Auto-upgrade stored legacy PIN to salted SHA-256 hash if not already hashed
+    if (!user.pin.startsWith('sha256:')) {
+      const secureHash = await hashPasswordClient(cleanInput);
+      setStaffList(prev => prev.map(s => s.id === user.id ? { ...s, pin: secureHash } : s));
     }
 
     setCurrentUserId(user.id);
     localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, user.id);
     setIsCashierLoggedIn(true);
     localStorage.setItem(STORAGE_KEYS.CASHIER_LOGGED, 'true');
-    addNotification('Login Kasir Berhasil', `Kasir ${user.name} (${user.role.toUpperCase()}) bertanggung jawab pada shift ini.`, 'system');
+
+    if (user.role === 'admin') {
+      const fallbackToken = `admin_${user.id}_${Date.now()}`;
+      setAdminSessionToken(fallbackToken);
+      sessionStorage.setItem('mitrastore_admin_session_token', fallbackToken);
+    } else {
+      setAdminSessionToken(null);
+      sessionStorage.removeItem('mitrastore_admin_session_token');
+    }
+
+    addNotification(
+      'Login Kasir Berhasil',
+      `Pegawai ${user.name} (${user.role === 'admin' ? 'BOS / OWNER' : user.role.toUpperCase()}) bertanggung jawab pada shift ini.`,
+      'system'
+    );
     return true;
   };
 
   const logoutCashier = () => {
     setIsCashierLoggedIn(false);
     localStorage.setItem(STORAGE_KEYS.CASHIER_LOGGED, 'false');
+    setAdminSessionToken(null);
+    sessionStorage.removeItem('mitrastore_admin_session_token');
     addNotification('Logout Kasir', `Kasir berhasil keluar dari sesi.`, 'system');
   };
 
-  const switchUser = (userId: string, pinOrPassword: string): boolean => {
-    const user = staffList.find(u => u.id === userId);
-    if (!user) return false;
-    const cleanInput = pinOrPassword.trim();
-    if (user.pin.trim() !== cleanInput && user.pin.trim().toLowerCase() !== cleanInput.toLowerCase()) {
-      return false;
+  const switchUser = async (userId: string, pinOrPassword: string): Promise<boolean> => {
+    return await loginCashier(userId, pinOrPassword);
+  };
+
+  // STRICT: Reset staff password by verified Admin / Bos
+  const resetStaffPasswordByAdmin = async (
+    targetUserId: string,
+    newPassword: string,
+    newName?: string
+  ): Promise<{ success: boolean; message?: string; error?: string }> => {
+    if (currentUser.role !== 'admin') {
+      return {
+        success: false,
+        error: 'Izin Ditolak: Hanya Bos / Admin Utama yang dapat mereset kata sandi pegawai.',
+      };
     }
 
-    setCurrentUserId(user.id);
-    localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, user.id);
-    setIsCashierLoggedIn(true);
-    localStorage.setItem(STORAGE_KEYS.CASHIER_LOGGED, 'true');
-    addNotification('Pergantian Kasir', `Kasir aktif beralih ke ${user.name} (${user.role.toUpperCase()}).`, 'system');
-    return true;
+    try {
+      const res = await fetch('/api/staff/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminToken: adminSessionToken,
+          targetUserId,
+          newPassword,
+          newName,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return {
+          success: false,
+          error: data.error || 'Gagal mereset kata sandi pegawai di server backend.',
+        };
+      }
+
+      // Hash password locally with SHA-256 + Salt so local storage is protected
+      const secureHash = await hashPasswordClient(newPassword);
+      setStaffList(prev =>
+        prev.map(s => {
+          if (s.id === targetUserId) {
+            return {
+              ...s,
+              pin: secureHash,
+              name: newName && newName.trim() ? newName.trim() : s.name,
+            };
+          }
+          return s;
+        })
+      );
+
+      addNotification(
+        'Kata Sandi Berhasil Direset',
+        `Kata sandi untuk pegawai telah diperbarui oleh Bos (${currentUser.name}).`,
+        'system'
+      );
+
+      return { success: true, message: data.message };
+    } catch {
+      // Offline fallback: hash password locally
+      const secureHash = await hashPasswordClient(newPassword);
+      setStaffList(prev =>
+        prev.map(s => {
+          if (s.id === targetUserId) {
+            return {
+              ...s,
+              pin: secureHash,
+              name: newName && newName.trim() ? newName.trim() : s.name,
+            };
+          }
+          return s;
+        })
+      );
+
+      return {
+        success: true,
+        message: 'Kata sandi berhasil diperbarui secara lokal (SHA-256 Terenkripsi).',
+      };
+    }
   };
+
 
   // Pengeluaran Kas (Kas Keluar / Pembelian Stok / Operasional)
   const addExpense = (expenseData: Omit<CashExpense, 'id' | 'date'> & { date?: string }) => {
@@ -1948,6 +2438,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loginCashier,
         logoutCashier,
         switchUser,
+        adminSessionToken,
+        resetStaffPasswordByAdmin,
+        isStaffModalOpen,
+        setIsStaffModalOpen,
         currentShift,
         openShift,
         closeShift,
@@ -1998,6 +2492,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         testVoiceAlert,
         isVoiceSettingsModalOpen,
         setIsVoiceSettingsModalOpen,
+        isOnline,
+        offlineQueue,
+        isSyncingOffline,
+        syncOfflineTransactions,
+        isOfflineModalOpen,
+        setIsOfflineModalOpen,
+        supabaseStatus,
+        isSupabaseModalOpen,
+        setIsSupabaseModalOpen,
+        checkSupabaseConnection,
+        seedDataToSupabase,
+        isSupabaseSyncing,
       }}
     >
       {children}

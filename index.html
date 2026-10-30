@@ -3,12 +3,84 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function() {
+        // 1. Mock Vite HMR WebSocket so that in iframe development mode it opens cleanly without errors
+        if (typeof window !== 'undefined' && window.WebSocket) {
+          var RealWebSocket = window.WebSocket;
+          class ViteHMRSocket extends EventTarget {
+            constructor() {
+              super();
+              this.readyState = 1;
+              this.OPEN = 1;
+              this.CONNECTING = 0;
+              this.CLOSING = 2;
+              this.CLOSED = 3;
+              setTimeout(() => {
+                this.dispatchEvent(new Event('open'));
+              }, 0);
+            }
+            send() {}
+            close() {
+              this.readyState = 3;
+              this.dispatchEvent(new Event('close'));
+            }
+          }
+
+          function ViteSafeWebSocket(url, protocols) {
+            if (protocols === 'vite-hmr' || (typeof url === 'string' && (url.includes('vite-hmr') || url.includes('token=')))) {
+              return new ViteHMRSocket();
+            }
+            return new RealWebSocket(url, protocols);
+          }
+          ViteSafeWebSocket.prototype = RealWebSocket.prototype;
+          ViteSafeWebSocket.CONNECTING = 0;
+          ViteSafeWebSocket.OPEN = 1;
+          ViteSafeWebSocket.CLOSING = 2;
+          ViteSafeWebSocket.CLOSED = 3;
+          window.WebSocket = ViteSafeWebSocket;
+        }
+
+        // 2. Filter out console.error and unhandledrejection for WebSocket disconnect in iframe
+        var origConsoleError = console.error;
+        console.error = function() {
+          var args = Array.prototype.slice.call(arguments);
+          var isWsError = args.some(function(arg) {
+            var str = String(arg && arg.message ? arg.message : arg);
+            return str.indexOf('WebSocket closed without opened') !== -1 || str.indexOf('[vite] failed to connect to websocket') !== -1;
+          });
+          if (isWsError) return;
+          origConsoleError.apply(console, args);
+        };
+
+        window.addEventListener('unhandledrejection', function(e) {
+          if (e && e.reason) {
+            var msg = String(e.reason.message || e.reason);
+            if (msg.indexOf('WebSocket') !== -1) {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+            }
+          }
+        }, true);
+      })();
+    </script>
     <title>MitraStore - Pusat Cetakan Kue, Alat Masak &amp; Perabotan Dapur</title>
     <meta name="description" content="MitraStore - Aplikasi Kasir POS &amp; Kelola Toko Cetakan Kue, Alat Masak &amp; Perabotan Dapur Minimalis Pink &amp; Putih dengan Multi-Kasir Login, Kamera Barcode, Shopee Sync, dan Rekap Penjualan." />
     <meta property="og:title" content="MitraStore - Pusat Cetakan Kue, Alat Masak &amp; Perabotan Dapur" />
     <meta property="og:description" content="MitraStore - Aplikasi Kasir POS &amp; Kelola Toko Cetakan Kue, Alat Masak &amp; Perabotan Dapur Minimalis Pink &amp; Putih dengan Multi-Kasir Login, Kamera Barcode, Shopee Sync, dan Rekap Penjualan." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- PWA & Mobile Meta Tags -->
+    <meta name="theme-color" content="#800020" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="MitraStore" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="alternate icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">

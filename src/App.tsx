@@ -10,13 +10,23 @@ import { Header } from './components/Header';
 import { CashierView } from './components/POS/CashierView';
 import { InventoryView } from './components/Inventory/InventoryView';
 import { SalesRecapView } from './components/Reports/SalesRecapView';
-import { CustomerView } from './components/Customers/CustomerView';
 import { ShopeeSyncView } from './components/Shopee/ShopeeSyncView';
-import { BackupView } from './components/Backup/BackupView';
 import { ShiftModal } from './components/Shift/ShiftModal';
 import { CashierLoginModal } from './components/POS/CashierLoginModal';
+import { StaffManagementModal } from './components/Staff/StaffManagementModal';
+import { OfflineSyncModal } from './components/Offline/OfflineSyncModal';
+import { SupabaseModal } from './components/Supabase/SupabaseModal';
 
 function POSApp() {
+  const { 
+    isStaffModalOpen, 
+    setIsStaffModalOpen, 
+    isOfflineModalOpen, 
+    setIsOfflineModalOpen,
+    isSupabaseModalOpen,
+    setIsSupabaseModalOpen,
+  } = usePOS();
+
   // App mode: 'welcome' (layar awal masuk), 'pos' (mode kasir khusus transaksi), 'management' (mode kelola toko)
   const [appMode, setAppMode] = useState<'welcome' | 'pos' | 'management'>('welcome');
   const [activeManagementTab, setActiveManagementTab] = useState<string>('inventory');
@@ -24,11 +34,7 @@ function POSApp() {
   const [isCashierLoginModalOpen, setIsCashierLoginModalOpen] = useState<boolean>(false);
 
   const handleSwitchMode = (mode: 'pos' | 'management') => {
-    if (mode === 'pos') {
-      setIsCashierLoginModalOpen(true);
-    } else {
-      setAppMode('management');
-    }
+    setAppMode(mode);
   };
 
   // Keyboard shortcut listeners (ESC to return to welcome, F1 for POS, F2 for Management)
@@ -74,6 +80,7 @@ function POSApp() {
         activeManagementTab={activeManagementTab}
         setActiveManagementTab={setActiveManagementTab}
         onOpenShiftModal={() => setIsShiftModalOpen(true)}
+        onOpenCashierLoginModal={() => setIsCashierLoginModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -103,9 +110,7 @@ function POSApp() {
             {(activeManagementTab === 'sales_recap' || activeManagementTab === 'reports' || activeManagementTab === 'shift_recap') && (
               <SalesRecapView onOpenShiftModal={() => setIsShiftModalOpen(true)} />
             )}
-            {activeManagementTab === 'customers' && <CustomerView />}
             {activeManagementTab === 'shopee' && <ShopeeSyncView />}
-            {activeManagementTab === 'backup' && <BackupView />}
           </div>
         )}
       </main>
@@ -116,14 +121,31 @@ function POSApp() {
         onClose={() => setIsShiftModalOpen(false)}
       />
 
-      {/* Cashier Multi-User Login Modal (Saat masuk ke mode POS) */}
+      {/* Cashier Multi-User Login Modal (Saat masuk ke mode POS atau ganti kasir) */}
       <CashierLoginModal
         isOpen={isCashierLoginModalOpen}
         onClose={() => setIsCashierLoginModalOpen(false)}
         onSuccess={() => {
           setIsCashierLoginModalOpen(false);
-          setAppMode('pos');
         }}
+      />
+
+      {/* Staff Management & Password Reset Modal for Verified Boss Only */}
+      <StaffManagementModal
+        isOpen={isStaffModalOpen}
+        onClose={() => setIsStaffModalOpen(false)}
+      />
+
+      {/* Offline Network Status & Local Storage Sync Modal */}
+      <OfflineSyncModal
+        isOpen={isOfflineModalOpen}
+        onClose={() => setIsOfflineModalOpen(false)}
+      />
+
+      {/* Supabase PostgreSQL Cloud Database Integration Modal */}
+      <SupabaseModal
+        isOpen={isSupabaseModalOpen}
+        onClose={() => setIsSupabaseModalOpen(false)}
       />
 
       {/* Minimalist Footer in Cream Pink & Maroon */}

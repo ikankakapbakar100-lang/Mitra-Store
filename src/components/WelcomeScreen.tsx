@@ -8,7 +8,7 @@ import { Logo } from './Logo';
 import { 
   ShoppingCart, 
   Store, 
-  ArrowRight
+  ArrowRight,
 } from 'lucide-react';
 import { CashierLoginModal } from './POS/CashierLoginModal';
 
@@ -32,11 +32,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onSelectMode }) =>
       {/* Soft Ambient Overlay for Optimal Text Contrast */}
       <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/15 to-[#800020]/25 pointer-events-none" />
 
-      {/* Top Bar: Brand Logo & Tagline */}
-      <header className="relative z-10 flex items-center justify-between max-w-4xl mx-auto w-full pt-1 sm:pt-2">
+      {/* Top Bar: Brand Logo & Store Tag */}
+      <header className="relative z-10 flex items-center justify-between max-w-4xl mx-auto w-full pt-1 sm:pt-2 gap-2">
         <div className="bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-white/60 shadow-xs">
           <Logo size="sm" />
         </div>
+        
         <span className="text-[11px] font-mono font-bold text-[#800020] bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-white/60 shadow-xs">
           Perabotan &amp; Cetakan Kue
         </span>
